@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Promoções - Supermercado Rigonato</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .produto-promocao {
+            border: 2px solid #ffc107;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+        .badge-promocao {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            padding: 8px 15px;
+            font-size: 0.9rem;
+        }
+        .preco-original {
+            text-decoration: line-through;
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        .economia {
+            color: #28a745;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
+            <div class="container">
+                <a class="navbar-brand" href="../index.html">
+                    <div class="logo-placeholder">
+                        <span>Mercado Rigonato</span>
+                    </div>
+                </a>
+                
+                <div class="d-flex align-items-center mx-3 flex-grow-1" style="max-width: 400px;">
+                    <div class="input-group">
+                        <input type="text" id="barra-busca" class="form-control" placeholder="Buscar produtos...">
+                        <button class="btn btn-primary" onclick="realizarBusca()">
+                            🔍
+                        </button>
+                    </div>
+                </div>
+                
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item">
+                            <a class="nav-link" href="../index.html#padaria">Padaria</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="../index.html#acougue">Açougue</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="hortifruti.html">Hortifruti</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="../index.html#mercado">Mercado</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="../index.html#racoes">Rações</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="../index.html#bebidas">Bebidas</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="promocoes.html">Promoções</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="sobre.html">Sobre Nós</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <section class="py-5 mt-5">
+        <div class="container">
+            <div class="row mb-4">
+                <div class="col-12 text-center">
+                    <h1 class="display-4 fw-bold text-warning">🎊 Promoções Especiais</h1>
+                    <p class="lead">Os melhores preços você encontra aqui no Rigonato!</p>
+                    <div class="alert alert-warning">
+                        ⏰ <strong>Ofertas por tempo limitado!</strong> Aproveite enquanto durarem os estoques.
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- Produto em Promoção 1 -->
+                <div class="col-md-3 col-6 mb-4">
+                    <div class="card produto-card h-100 produto-promocao">
+                        <div class="position-relative">
+                            <div class="card-img-top bg-danger d-flex align-items-center justify-content-center" style="height: 200px;">
+                                <span style="font-size: 3rem;">🥩</span>
+                            </div>
+                            <span class="badge-promocao">-20%</span>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">Picanha</h5>
+                            <p class="card-text">Corte especial em promoção</p>
+                            <div class="mb-2">
+                                <span class="preco-original">R$ 79,90</span>
+                                <span class="preco ms-2">R$ 63,90</span>
+                            </div>
+                            <div class="economia">Economize R$ 16,00</div>
+                            <button class="btn btn-warning btn-sm w-100 mt-2" onclick="adicionarAoCarrinho(5)">
+                                🛒 Adicionar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Produto em Promoção 2 -->
+                <div class="col-md-3 col-6 mb-4">
+                    <div class="card produto-card h-100 produto-promocao">
+                        <div class="position-relative">
+                            <div class="card-img-top bg-success d-flex align-items-center justify-content-center" style="height: 200px;">
+                                <span style="font-size: 3rem;">🍎</span>
+                            </div>
+                            <span class="badge-promocao">-15%</span>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">Maçã Gala</h5>
+                            <p class="card-text">Fresquinha e crocante</p>
+                            <div class="mb-2">
+                                <span class="preco-original">R$ 5,90</span>
+                                <span class="preco ms-2">R$ 5,00</span>
+                            </div>
+                            <div class="economia">Economize R$ 0,90</div>
+                            <button class="btn btn-warning btn-sm w-100 mt-2" onclick="adicionarAoCarrinho(9)">
+                                🛒 Adicionar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Adicione mais produtos em promoção -->
+            </div>
+
+            <!-- Banner de Cupom -->
+            <div class="row mt-5">
+                <div class="col-12">
+                    <div class="bg-primary text-white rounded p-4 text-center">
+                        <h3>🎁 Cupom Especial</h3>
+                        <p class="mb-3">Use o código <strong>RIGONATO10</strong> e ganhe 10% de desconto em toda sua compra!</p>
+                        <small>Válido até o final do mês</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="bg-dark text-white py-4">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4">
+                    <h5>Supermercado Rigonato</h5>
+                    <p>O melhor mercado da região com preços baixos e qualidade garantida.</p>
+                </div>
+                <div class="col-md-4">
+                    <h5>Horário de Funcionamento</h5>
+                    <p>Segunda a Sábado: 8h às 22h<br>Domingos e Feriados: 8h às 20h</p>
+                </div>
+                <div class="col-md-4">
+                    <h5>Contato</h5>
+                    <p>Endereço: Rua Exemplo, 123<br>Telefone: (11) 1234-5678<br>Email: contato@rigonato.com.br</p>
+                </div>
+            </div>
+            <div class="text-center mt-3">
+                <p>&copy; 2023 Supermercado Rigonato. Todos os direitos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/script.js"></script>
+</body>
+</html>

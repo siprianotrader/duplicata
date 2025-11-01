@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Mercado Rigonato</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h3><i class="fas fa-store"></i> <span class="menu-text">Rigonato Admin</span></h3>
+        </div>
+        <ul class="sidebar-menu">
+            <li><a href="#" class="active" data-page="dashboard"><i class="fas fa-tachometer-alt"></i> <span class="menu-text">Dashboard</span></a></li>
+            <li><a href="#" data-page="pedidos"><i class="fas fa-shopping-cart"></i> <span class="menu-text">Pedidos</span></a></li>
+            <li><a href="#" data-page="produtos"><i class="fas fa-box-open"></i> <span class="menu-text">Produtos</span></a></li>
+            <li><a href="#" data-page="banners"><i class="fas fa-images"></i> <span class="menu-text">Banners</span></a></li>
+            <li><a href="#" data-page="configuracoes"><i class="fas fa-cog"></i> <span class="menu-text">Configurações</span></a></li>
+            <li><a href="index.html"><i class="fas fa-sign-out-alt"></i> <span class="menu-text">Voltar ao Site</span></a></li>
+        </ul>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Navbar -->
+        <nav class="navbar navbar-expand-lg navbar-custom mb-4">
+            <div class="container-fluid">
+                <button class="navbar-toggler toggle-sidebar" type="button">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="navbar-nav ms-auto">
+                    <div class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user-circle me-1"></i> Administrador
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i> Meu Perfil</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="index.html"><i class="fas fa-sign-out-alt me-2"></i> Voltar ao Site</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Dashboard Page -->
+        <div class="page-content active" id="dashboard">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Dashboard</h2>
+                <div class="btn-group">
+                    <button class="btn btn-outline-primary active" data-period="today">Hoje</button>
+                    <button class="btn btn-outline-primary" data-period="week">Esta Semana</button>
+                    <button class="btn btn-outline-primary" data-period="month">Este Mês</button>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="row g-4 mb-4">
+                <div class="col-md-3">
+                    <div class="card card-dashboard">
+                        <div class="card-body stat-card">
+                            <div class="stat-number" id="ordersToday">0</div>
+                            <div class="stat-label">Pedidos Hoje</div>
+                            <div class="text-success mt-2" id="ordersTrend">
+                                <i class="fas fa-arrow-up"></i> 0% vs ontem
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card card-dashboard">
+                        <div class="card-body stat-card">
+                            <div class="stat-number" id="revenueToday">R$ 0</div>
+                            <div class="stat-label">Faturamento</div>
+                            <div class="text-success mt-2" id="revenueTrend">
+                                <i class="fas fa-arrow-up"></i> 0% vs ontem
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card card-dashboard">
+                        <div class="card-body stat-card">
+                            <div class="stat-number" id="totalProducts">0</div>
+                            <div class="stat-label">Produtos Ativos</div>
+                            <div class="text-info mt-2" id="promoProducts">
+                                <i class="fas fa-tag"></i> 0 em promoção
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card card-dashboard">
+                        <div class="card-body stat-card">
+                            <div class="stat-number" id="completionRate">0%</div>
+                            <div class="stat-label">Taxa de Conclusão</div>
+                            <div class="text-success mt-2" id="pendingOrders">
+                                <i class="fas fa-clock"></i> 0 pendentes
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts and Recent Orders -->
+            <div class="row g-4">
+                <div class="col-md-8">
+                    <div class="card card-dashboard">
+                        <div class="card-header bg-white">
+                            <h5 class="card-title mb-0">Vendas dos Últimos 7 Dias</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="salesChart" height="250"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card card-dashboard">
+                        <div class="card-header bg-white">
+                            <h5 class="card-title mb-0">Status dos Pedidos</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="ordersChart" height="250"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Orders -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card card-dashboard">
+                        <div class="card-header bg-white">
+                            <h5 class="card-title mb-0">Pedidos Recentes</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Cliente</th>
+                                            <th>Data</th>
+                                            <th>Valor</th>
+                                            <th>Status</th>
+                                            <th>Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="recentOrdersTable">
+                                        <!-- Recent orders will be loaded here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pedidos Page -->
+        <div class="page-content" id="pedidos">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Gerenciar Pedidos</h2>
+                <div class="btn-group">
+                    <button class="btn btn-outline-primary active" data-filter="all">Todos</button>
+                    <button class="btn btn-outline-primary" data-filter="recebido">Recebidos</button>
+                    <button class="btn btn-outline-primary" data-filter="preparacao">Preparação</button>
+                    <button class="btn btn-outline-primary" data-filter="finalizado">Finalizados</button>
+                </div>
+            </div>
+
+            <div class="card card-dashboard">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Cliente</th>
+                                    <th>Telefone</th>
+                                    <th>Itens</th>
+                                    <th>Total</th>
+                                    <th>Entrega</th>
+                                    <th>Status</th>
+                                    <th>Data</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminOrdersTable">
+                                <!-- Orders will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Produtos Page -->
+        <div class="page-content" id="produtos">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Gerenciar Produtos</h2>
+                <button class="btn btn-primary-custom" id="addProductBtn">
+                    <i class="fas fa-plus me-1"></i> Adicionar Produto
+                </button>
+            </div>
+
+            <div class="card card-dashboard">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Imagem</th>
+                                    <th>Nome</th>
+                                    <th>Categoria</th>
+                                    <th>Preço</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminProductsTable">
+                                <!-- Products will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Banners Page -->
+        <div class="page-content" id="banners">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Gerenciar Banners</h2>
+                <button class="btn btn-primary-custom" id="addBannerBtn">
+                    <i class="fas fa-plus me-1"></i> Adicionar Banner
+                </button>
+            </div>
+
+            <div class="card card-dashboard">
+                <div class="card-body">
+                    <div class="row" id="adminBannersContainer">
+                        <!-- Banners will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Configurações Page -->
+        <div class="page-content" id="configuracoes">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Configurações do Sistema</h2>
+            </div>
+
+            <div class="card card-dashboard">
+                <div class="card-body">
+                    <form id="settingsForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="whatsappNumber" class="form-label">Número do WhatsApp</label>
+                                    <input type="text" class="form-control" id="whatsappNumber" value="5569993959196">
+                                    <div class="form-text">Formato: 55DDDNUMERO (sem parênteses ou traços)</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="storeHours" class="form-label">Horário de Funcionamento</label>
+                                    <input type="text" class="form-control" id="storeHours" value="Seg-Sab: 7h-19h">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="deliveryFee" class="form-label">Taxa de Entrega (R$)</label>
+                                    <input type="number" step="0.01" class="form-control" id="deliveryFee" value="5.00">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="freeDeliveryMin" class="form-label">Pedido Mínimo para Entrega Grátis (R$)</label>
+                                    <input type="number" step="0.01" class="form-control" id="freeDeliveryMin" value="100.00">
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-primary-custom" id="saveSettings">Salvar Configurações</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Product Modal -->
+    <div class="modal fade" id="addProductModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Adicionar Produto</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="productForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="productName" class="form-label">Nome do Produto *</label>
+                                    <input type="text" class="form-control" id="productName" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="productCategory" class="form-label">Categoria *</label>
+                                    <select class="form-select" id="productCategory" required>
+                                        <option value="">Selecione uma categoria</option>
+                                        <option value="acougue">Açougue</option>
+                                        <option value="padaria">Padaria</option>
+                                        <option value="hortifruti">Hortifruti</option>
+                                        <option value="mercado">Mercado</option>
+                                        <option value="promocao">Promoção</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="productPrice" class="form-label">Preço (R$) *</label>
+                                    <input type="number" step="0.01" class="form-control" id="productPrice" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="productImage" class="form-label">Imagem do Produto</label>
+                                    <input type="file" class="form-control" id="productImage" accept="image/*">
+                                    <div class="form-text">Envie uma imagem ou use URL abaixo</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="productImageUrl" class="form-label">URL da Imagem</label>
+                                    <input type="text" class="form-control" id="productImageUrl" placeholder="https://exemplo.com/imagem.jpg">
+                                </div>
+                                <div class="mb-3 form-check">
+                                    <input type="checkbox" class="form-check-input" id="productOnSale">
+                                    <label class="form-check-label" for="productOnSale">Produto em Promoção</label>
+                                </div>
+                                <div class="mb-3" id="originalPriceField" style="display: none;">
+                                    <label for="productOriginalPrice" class="form-label">Preço Original (R$)</label>
+                                    <input type="number" step="0.01" class="form-control" id="productOriginalPrice">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="productDescription" class="form-label">Descrição do Produto</label>
+                            <textarea class="form-control" id="productDescription" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="productWeightOptions" class="form-label">Variações de Peso (opcional)</label>
+                            <input type="text" class="form-control" id="productWeightOptions" placeholder="Ex: 500g-1kg, 1kg-2kg, 2kg-4kg">
+                            <div class="form-text">Separe as opções por vírgula</div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="saveProduct">Salvar Produto</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Banner Modal -->
+    <div class="modal fade" id="addBannerModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Adicionar Banner</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="bannerForm">
+                        <div class="mb-3">
+                            <label for="bannerImage" class="form-label">Imagem do Banner</label>
+                            <input type="file" class="form-control" id="bannerImage" accept="image/*">
+                            <div class="form-text">Envie uma imagem ou use URL abaixo</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="bannerImageUrl" class="form-label">URL da Imagem</label>
+                            <input type="text" class="form-control" id="bannerImageUrl" placeholder="https://exemplo.com/banner.jpg">
+                        </div>
+                        <div class="mb-3">
+                            <label for="bannerTitle" class="form-label">Título do Banner</label>
+                            <input type="text" class="form-control" id="bannerTitle" placeholder="Ex: Ofertas Especiais">
+                        </div>
+                        <div class="mb-3">
+                            <label for="bannerLink" class="form-label">Link (opcional)</label>
+                            <input type="text" class="form-control" id="bannerLink" placeholder="https://exemplo.com ou #categoria">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="saveBanner">Salvar Banner</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/database.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>

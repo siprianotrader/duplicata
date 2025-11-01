@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mercado Rigonato — Pedidos via WhatsApp</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Pacifico&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="" crossorigin="anonymous">
+  <style>
+    :root{
+      --blue:#0b57a4; /* base azul */
+      --accent:#e53935; /* vermelho */
+      --bg:#e9f2ff;
+      --card:#ffffff;
+      --muted:#6b7280;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Poppins,system-ui,Arial;background:linear-gradient(180deg,#0b57a4 0%, #0a4b8c 60%);color:#111}
+    header{background:rgba(255,255,255,0.04);backdrop-filter:blur(2px);padding:18px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.06)}
+    .brand{display:flex;align-items:center;gap:16px}
+    .brand img{height:64px}
+    .brand h1{margin:0;color:#fff;font-size:22px}
+    .brand p{margin:0;color:rgba(255,255,255,0.9);font-family:Pacifico;font-size:14px}
+    .actions{display:flex;gap:12px;align-items:center}
+    .phone-set{background:rgba(255,255,255,0.07);padding:8px 10px;border-radius:8px;color:#fff;font-size:14px}
+    main{max-width:1100px;margin:28px auto;padding:20px;}
+
+    .hero{display:grid;grid-template-columns:1fr 420px;gap:28px;align-items:center;margin-bottom:20px}
+    .hero-card{background:linear-gradient(180deg,rgba(255,255,255,0.06), rgba(255,255,255,0.02));padding:22px;border-radius:12px;color:#fff}
+    .hero-card h2{margin:0 0 8px;font-size:28px}
+    .hero-card p{margin:0 0 16px;color:rgba(255,255,255,0.9)}
+    .search{display:flex;gap:8px}
+    .search input{flex:1;padding:12px;border-radius:8px;border:0;font-size:16px}
+    .search button{padding:12px 14px;border-radius:8px;border:0;background:var(--accent);color:#fff;font-weight:600}
+
+    .banner{background:linear-gradient(90deg,#fff 0%, rgba(255,255,255,0.12) 100%);padding:14px;border-radius:10px;text-align:center}
+    .banner p{margin:0;color:#0b57a4;font-weight:700}
+
+    .products{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;margin-top:18px}
+    .product{background:var(--card);border-radius:10px;padding:14px;box-shadow:0 6px 18px rgba(2,6,23,0.15);display:flex;flex-direction:column;gap:10px}
+    .product img{width:100%;height:140px;object-fit:cover;border-radius:8px}
+    .product h3{margin:0;font-size:16px}
+    .price{font-weight:700;color:var(--blue)}
+    .controls{display:flex;gap:8px;align-items:center}
+    .controls input[type=number]{width:64px;padding:8px;border-radius:8px;border:1px solid #e6e6e6}
+    .btn-wpp{background:#25D366;color:#fff;padding:9px 12px;border-radius:8px;border:0;display:inline-flex;gap:8px;align-items:center;cursor:pointer}
+
+    footer{max-width:1100px;margin:18px auto;color:#fff;text-align:center;padding:18px}
+
+    /* mobile */
+    @media (max-width:900px){
+      .hero{grid-template-columns:1fr}
+      .brand img{height:56px}
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <!-- Substitua /img/logo.png pela sua logo enviada -->
+      <img src="img/logo.png" alt="Mercado Rigonato Logo" onerror="this.style.display='none'">
+      <div>
+        <h1>Mercado Rigonato</h1>
+        <p>Onde tudo é mais Barato</p>
+      </div>
+    </div>
+    <div class="actions">
+      <div class="phone-set" title="Número usado para receber pedidos via WhatsApp">
+        Número pedido: <span id="phoneDisplay">+55 9XXXXXXXXX</span>
+      </div>
+      <button id="openSettings" title="Configurar número" style="background:transparent;border:1px solid rgba(255,255,255,0.08);color:#fff;padding:8px 10px;border-radius:8px"><i class="fa fa-gear"></i> Ajustes</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-card">
+        <h2>Peça pelo WhatsApp — rápido e fácil</h2>
+        <p>Escolha seus produtos e envie o pedido direto para nosso WhatsApp com o nome do item, quantidade e total automático.</p>
+
+        <div class="search">
+          <input id="search" placeholder="Buscar produto (ex: arroz, leite, refrigerante)" />
+          <button id="btnSearch">Buscar</button>
+        </div>
+
+        <div style="margin-top:12px;display:flex;gap:10px">
+          <div class="banner">
+            <p>Entrega rápida — Retirada na loja — Pagamento em dinheiro ou cartão</p>
+          </div>
+        </div>
+      </div>
+
+      <aside style="display:flex;flex-direction:column;gap:12px">
+        <div class="hero-card" style="text-align:center">
+          <h3>Promoções do Dia</h3>
+          <p style="color:rgba(255,255,255,0.9)">Veja os produtos com desconto — atualize sempre</p>
+          <div style="margin-top:12px;">
+            <strong style="font-size:20px;color:var(--accent)">Desconto em Leite&nbsp;—&nbsp;2x de 1L</strong>
+          </div>
+        </div>
+
+        <div class="hero-card" style="text-align:center">
+          <h3>Funcionamento</h3>
+          <p style="margin-bottom:6px;color:rgba(255,255,255,0.9)">Atendimento via WhatsApp das 08:00 às 20:00</p>
+          <small style="color:rgba(255,255,255,0.7)">Número configurável nas configurações</small>
+        </div>
+      </aside>
+    </section>
+
+    <section>
+      <h2 style="color:#fff;margin:8px 0">Produtos</h2>
+      <div class="products" id="productsList">
+        <!-- Produtos gerados por JS -->
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <small>© Mercado Rigonato — Todos os direitos reservados</small>
+  </footer>
+
+  <!-- Modal de configurações simples -->
+  <div id="settingsModal" style="display:none;position:fixed;inset:0;background:rgba(2,6,23,0.6);align-items:center;justify-content:center">
+    <div style="background:#fff;padding:18px;border-radius:10px;max-width:420px;width:90%">
+      <h3>Configurar número do WhatsApp</h3>
+      <p style="margin-top:6px">Informe o número no formato internacional sem espaços (ex: 5511999887766)</p>
+      <input id="phoneInput" placeholder="5511XXXXXXXX" style="width:100%;padding:10px;margin-top:8px;border-radius:8px;border:1px solid #ddd" />
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+        <button id="savePhone" style="padding:10px 12px;background:var(--blue);color:#fff;border:0;border-radius:8px">Salvar</button>
+        <button id="closeSettings" style="padding:10px 12px;background:#eee;border:0;border-radius:8px">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Dados de exemplo — troque/adicione produtos conforme necessário
+    const PRODUCTS = [
+      { id:1, name:'Arroz Tipo 1 - 5kg', price:29.90, img:'img/arroz.jpg' },
+      { id:2, name:'Feijão Carioca - 1kg', price:7.50, img:'img/feijao.jpg' },
+      { id:3, name:'Leite Longa Vida 1L', price:3.79, img:'img/leite.jpg' },
+      { id:4, name:'Açúcar Refinado 1kg', price:4.99, img:'img/acucar.jpg' },
+      { id:5, name:'Óleo de Soja 900ml', price:8.25, img:'img/oleo.jpg' },
+      { id:6, name:'Macarrão Espaguete 500g', price:5.10, img:'img/macarrao.jpg' }
+    ];
+
+    // Número padrão — substitua ou deixe que o usuário configure
+    let whatsappNumber = localStorage.getItem('rg_whatsapp') || '5511999999999';
+    document.getElementById('phoneDisplay').innerText = formatPhoneDisplay(whatsappNumber);
+
+    // Renderiza os produtos na página
+    function renderProducts(list){
+      const container = document.getElementById('productsList');
+      container.innerHTML = '';
+      list.forEach(p=>{
+        const el = document.createElement('div'); el.className='product';
+        el.innerHTML = `
+          <img src="${p.img}" alt="${p.name}" onerror="this.src='img/placeholder.png'" />
+          <h3>${p.name}</h3>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div class="price">R$ ${p.price.toFixed(2).replace('.',',')}</div>
+            <div style="font-size:12px;color:var(--muted)">ID ${p.id}</div>
+          </div>
+          <div class="controls">
+            <input type="number" min="1" value="1" id="q_${p.id}" />
+            <button class="btn-wpp" onclick="sendWhatsApp(${p.id})"><i class="fa fa-whatsapp"></i> Pedir</button>
+          </div>
+        `;
+        container.appendChild(el);
+      })
+    }
+
+    renderProducts(PRODUCTS);
+
+    // Buscar produto
+    document.getElementById('btnSearch').addEventListener('click', ()=>{
+      const q = document.getElementById('search').value.trim().toLowerCase();
+      if(!q){ renderProducts(PRODUCTS); return; }
+      const filtered = PRODUCTS.filter(p=>p.name.toLowerCase().includes(q));
+      renderProducts(filtered.length?filtered:[{id:0,name:'Nenhum produto encontrado',price:0,img:'img/placeholder.png'}]);
+    });
+
+    // Função para enviar mensagem ao WhatsApp com produto e quantidade
+    function sendWhatsApp(productId){
+      const p = PRODUCTS.find(x=>x.id===productId);
+      if(!p) return alert('Produto não encontrado');
+      const qty = Number(document.getElementById('q_'+p.id).value) || 1;
+      const total = (p.price * qty).toFixed(2);
+      const msg = `Olá! Gostaria de fazer um pedido:\n- Produto: ${p.name}\n- Quantidade: ${qty}\n- Total: R$ ${total.replace('.',',')}\n\nNome: \nEndereço (ou retiro na loja): \nObservações:`;
+      const encoded = encodeURIComponent(msg);
+      const url = `https://wa.me/${whatsappNumber}?text=${encoded}`;
+      window.open(url, '_blank');
+    }
+
+    // Configurações de número
+    const modal = document.getElementById('settingsModal');
+    document.getElementById('openSettings').addEventListener('click', ()=>{
+      document.getElementById('phoneInput').value = whatsappNumber;
+      modal.style.display='flex';
+    });
+    document.getElementById('closeSettings').addEventListener('click', ()=> modal.style.display='none');
+    document.getElementById('savePhone').addEventListener('click', ()=>{
+      const v = document.getElementById('phoneInput').value.trim();
+      if(!/^[0-9]{10,15}$/.test(v)) return alert('Informe o número no formato correto, apenas dígitos (ex: 5511999887766)');
+      whatsappNumber = v;
+      localStorage.setItem('rg_whatsapp', v);
+      document.getElementById('phoneDisplay').innerText = formatPhoneDisplay(v);
+      modal.style.display='none';
+    });
+
+    function formatPhoneDisplay(raw){
+      if(!raw) return '+55 XXXXXXXXX';
+      // Ex: 5511999887766 -> +55 11 99988-7766 (simples)
+      if(raw.length>=12){
+        const country = raw.slice(0,2);
+        const ddd = raw.slice(2,4);
+        const rest = raw.slice(4);
+        return `+${country} ${ddd} ${rest}`;
+      }
+      return `+${raw}`;
+    }
+
+    // Prevent search on enter from reloading page
+    document.getElementById('search').addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); document.getElementById('btnSearch').click(); } });
+
+  </script>
+</body>
+</html>

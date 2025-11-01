@@ -1,0 +1,223 @@
+/* Estilos Gerais */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    padding-top: 76px;
+}
+
+/* Logo */
+.logo-real {
+    transition: transform 0.3s ease;
+}
+
+.logo-real:hover {
+    transform: scale(1.05);
+}
+
+/* Banner */
+.banner-section {
+    margin-bottom: 30px;
+}
+
+.carousel-item {
+    position: relative;
+}
+
+.carousel-caption {
+    background: rgba(0, 0, 0, 0.6);
+    border-radius: 10px;
+    padding: 20px;
+    bottom: 20px;
+}
+
+/* Carousel de Categorias */
+.categoria-carousel .carousel-item {
+    padding: 10px;
+}
+
+.categoria-card {
+    border: none;
+    transition: all 0.3s ease;
+    text-align: center;
+    background: white;
+    border-radius: 15px;
+    padding: 20px;
+}
+
+.categoria-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+.categoria-img {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 50%;
+    margin: 0 auto;
+    border: 3px solid #f8f9fa;
+    transition: all 0.3s ease;
+}
+
+.categoria-card:hover .categoria-img {
+    border-color: #007bff;
+    transform: scale(1.1);
+}
+
+/* Controles do Carousel Personalizados */
+.carousel-control-prev,
+.carousel-control-next {
+    width: 50px;
+    height: 50px;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 50%;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0.8;
+}
+
+.carousel-control-prev {
+    left: -25px;
+}
+
+.carousel-control-next {
+    right: -25px;
+}
+
+.carousel-control-prev:hover,
+.carousel-control-next:hover {
+    opacity: 1;
+    background: rgba(0, 0, 0, 0.9);
+}
+
+/* Produtos */
+.produto-card {
+    transition: all 0.3s ease;
+    border: none;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+.produto-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+}
+
+.preco {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #28a745;
+}
+
+/* Navbar */
+.navbar {
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.nav-link {
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.nav-link:hover {
+    color: #007bff !important;
+}
+
+/* Barra de Busca */
+.max-w-400 {
+    max-width: 400px;
+}
+
+/* Sugestões de Busca */
+.hover-bg:hover {
+    background-color: #f8f9fa !important;
+}
+
+#sugestoes-busca {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .categoria-img {
+        width: 80px;
+        height: 80px;
+    }
+    
+    .carousel-caption h3 {
+        font-size: 1.2rem;
+    }
+    
+    .carousel-caption p {
+        font-size: 0.9rem;
+    }
+    
+    body {
+        padding-top: 66px;
+    }
+    
+    .logo-real {
+        max-height: 40px;
+    }
+    
+    .carousel-control-prev,
+    .carousel-control-next {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .carousel-control-prev {
+        left: -20px;
+    }
+    
+    .carousel-control-next {
+        right: -20px;
+    }
+}
+
+/* Animações */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.categoria-card, .produto-card {
+    animation: fadeIn 0.6s ease-out;
+}
+
+@keyframes bounce {
+    0%, 20%, 60%, 100% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-10px);
+    }
+    80% {
+        transform: translateY(-5px);
+    }
+}
+
+.btn-success {
+    animation: bounce 0.6s;
+}
+
+/* Cards de Promoção */
+.card.bg-warning,
+.card.bg-danger {
+    border: none;
+    border-radius: 15px;
+    transition: transform 0.3s ease;
+}
+
+.card.bg-warning:hover,
+.card.bg-danger:hover {
+    transform: scale(1.05);
+}

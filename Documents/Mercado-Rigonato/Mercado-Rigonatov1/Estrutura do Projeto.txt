@@ -1,0 +1,25 @@
+Mercado-Rigonato-SEM-ECOMMERCE/
+├── index.html
+├── css/
+│   └── style.css
+├── js/
+│   └── script.js
+├── img/
+│   ├── logo.png
+│   ├── banners/
+│   │   ├── desktop/
+│   │   └── mobile/
+│   ├── categorias/
+│   └── produtos/
+└── paginas/
+    ├── padaria.html
+    ├── acougue.html
+    ├── hortifruti.html
+    ├── mercado.html
+    ├── bebidas.html
+    ├── racoes.html
+    ├── novidades.html
+    ├── promocoes.html
+    ├── sobre.html
+    ├── contato.html
+    └── localizacao.html

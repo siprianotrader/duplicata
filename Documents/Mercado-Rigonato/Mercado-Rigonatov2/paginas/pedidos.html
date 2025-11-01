@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meus Pedidos - Supermercado Rigonato</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .pedidos-hero {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 100px 0;
+            margin-top: 76px;
+            text-align: center;
+        }
+        .pedido-card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+        .pedido-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .status-badge {
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        .status-confirmado { background: #28a745; color: white; }
+        .status-preparando { background: #ffc107; color: black; }
+        .status-enviado { background: #17a2b8; color: white; }
+        .status-entregue { background: #6c757d; color: white; }
+        .produto-pedido {
+            border-bottom: 1px solid #eee;
+            padding: 10px 0;
+        }
+        .produto-pedido:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
+            <div class="container">
+                <a class="navbar-brand" href="../index.html">
+                    <img src="../img/logo.png" alt="Supermercado Rigonato" class="logo-real">
+                </a>
+                
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item"><a class="nav-link" href="../index.html#categorias">Categorias</a></li>
+                        <li class="nav-item"><a class="nav-link" href="promocoes.html">Promoções</a></li>
+                        <li class="nav-item"><a class="nav-link" href="sobre.html">Sobre Nós</a></li>
+                        <li class="nav-item"><a class="nav-link" href="carrinho.html" class="position-relative">
+                            🛒 Carrinho
+                            <span id="carrinho-contador" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display: none;">0</span>
+                        </a></li>
+                        <li class="nav-item"><a class="nav-link active" href="pedidos.html">Meus Pedidos</a></li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <section class="pedidos-hero">
+        <div class="container">
+            <h1 class="display-4 fw-bold">📦 Meus Pedidos</h1>
+            <p class="lead">Acompanhe todos os seus pedidos em um só lugar</p>
+        </div>
+    </section>
+
+    <section class="py-5">
+        <div class="container">
+            <div class="row mb-4">
+                <div class="col-12">
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="../index.html">Home</a></li>
+                            <li class="breadcrumb-item"><a href="minhaconta.html">Minha Conta</a></li>
+                            <li class="breadcrumb-item active">Meus Pedidos</li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+
+            <div id="area-nao-logado" class="row" style="display: none;">
+                <div class="col-lg-6 mx-auto">
+                    <div class="card text-center">
+                        <div class="card-body py-5">
+                            <div style="font-size: 4rem;">🔐</div>
+                            <h3 class="mb-3">Acesso Restrito</h3>
+                            <p class="text-muted mb-4">Faça login para visualizar seus pedidos</p>
+                            <a href="minhaconta.html" class="btn btn-primary btn-lg">Fazer Login</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="area-logado" style="display: none;">
+                <!-- Filtros -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col-md-6">
+                                        <h5 class="mb-0">Filtrar por status:</h5>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <select class="form-select" id="filtro-status" onchange="filtrarPedidos()">
+                                            <option value="todos">Todos os pedidos</option>
+                                            <option value="confirmado">Confirmados</option>
+                                            <option value="preparando">Preparando</option>
+                                            <option value="enviado">Enviados</option>
+                                            <option value="entregue">Entregues</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lista de Pedidos -->
+                <div id="lista-pedidos">
+                    <!-- Pedidos serão carregados aqui -->
+                </div>
+
+                <!-- Sem pedidos -->
+                <div id="sem-pedidos" class="text-center py-5" style="display: none;">
+                    <div style="font-size: 4rem;">📦</div>
+                    <h3 class="mt-3">Nenhum pedido encontrado</h3>
+                    <p class="text-muted mb-4">Que tal fazer sua primeira compra?</p>
+                    <a href="../index.html" class="btn btn-primary btn-lg">Fazer Minha Primeira Compra</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Modal Detalhes do Pedido -->
+    <div class="modal fade" id="modalDetalhesPedido" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">📋 Detalhes do Pedido</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="detalhes-pedido">
+                    <!-- Detalhes serão carregados aqui -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-dark text-white py-4">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4">
+                    <h5>Supermercado Rigonato</h5>
+                    <p>O melhor mercado da região com preços baixos e qualidade garantida.</p>
+                </div>
+                <div class="col-md-4">
+                    <h5>Horário de Funcionamento</h5>
+                    <p>Segunda a Sábado: 8h às 22h<br>Domingos e Feriados: 8h às 20h</p>
+                </div>
+                <div class="col-md-4">
+                    <h5>Contato</h5>
+                    <p>Endereço: Rua Exemplo, 123<br>Telefone: (11) 1234-5678<br>Email: contato@rigonato.com.br</p>
+                </div>
+            </div>
+            <div class="text-center mt-3">
+                <p>&copy; 2023 Supermercado Rigonato. Todos os direitos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            atualizarContadorCarrinho();
+            carregarPedidos();
+        });
+
+        function carregarPedidos() {
+            const areaNaoLogado = document.getElementById('area-nao-logado');
+            const areaLogado = document.getElementById('area-logado');
+            const listaPedidos = document.getElementById('lista-pedidos');
+            const semPedidos = document.getElementById('sem-pedidos');
+
+            if (!usuarioLogado) {
+                areaNaoLogado.style.display = 'block';
+                areaLogado.style.display = 'none';
+                return;
+            }
+
+            areaNaoLogado.style.display = 'none';
+            areaLogado.style.display = 'block';
+
+            const pedidos = JSON.parse(localStorage.getItem('pedidos')) || [];
+            const meusPedidos = pedidos.filter(pedido => 
+                pedido.usuario && pedido.usuario.email === usuarioLogado.email
+            ).sort((a, b) => new Date(b.data) - new Date(a.data));
+
+            if (meusPedidos.length === 0) {
+                listaPedidos.style.display = 'none';
+                semPedidos.style.display = 'block';
+                return;
+            }
+
+            listaPedidos.style.display = 'block';
+            semPedidos.style.display = 'none';
+            filtrarPedidos();
+        }
+
+        function filtrarPedidos() {
+            const filtro = document.getElementById('filtro-status').value;
+            const pedidos = JSON.parse(localStorage.getItem('pedidos')) || [];
+            const meusPedidos = pedidos.filter(pedido => 
+                pedido.usuario && pedido.usuario.email === usuarioLogado.email
+            ).sort((a, b) => new Date(b.data) - new Date(a.data));
+
+            const pedidosFiltrados = filtro === 'todos' 
+                ? meusPedidos 
+                : meusPedidos.filter(pedido => pedido.status === filtro);
+
+            const listaPedidos = document.getElementById('lista-pedidos');
+            
+            if (pedidosFiltrados.length === 0) {
+                listaPedidos.innerHTML = `
+                    <div class="text-center py-5">
+                        <div style="font-size: 3rem;">🔍</div>
+                        <h4>Nenhum pedido encontrado</h4>
+                        <p class="text-muted">Nenhum pedido corresponde ao filtro selecionado</p>
+                    </div>
+                `;
+                return;
+            }
+
+            listaPedidos.innerHTML = pedidosFiltrados.map(pedido => `
+                <div class="card pedido-card">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-3">
+                                <strong>Pedido #${pedido.id}</strong>
+                                <div class="text-muted small">
+                                    ${new Date(pedido.data).toLocaleDateString('pt-BR')}
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <span class="status-badge status-${pedido.status}">
+                                    ${obterTextoStatus(pedido.status)}
+                                </span>
+                            </div>
+                            <div class="col-md-2">
+                                <strong>R$ ${pedido.total.toFixed(2)}</strong>
+                            </div>
+                            <div class="col-md-3">
+                                <small class="text-muted">
+                                    ${pedido.itens.length} ite${pedido.itens.length === 1 ? 'm' : 'ns'}
+                                </small>
+                            </div>
+                            <div class="col-md-2 text-end">
+                                <button class="btn btn-outline-primary btn-sm" onclick="verDetalhesPedido('${pedido.id}')">
+                                    Ver Detalhes
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function obterTextoStatus(status) {
+            const statusMap = {
+                'confirmado': 'Confirmado',
+                'preparando': 'Preparando',
+                'enviado': 'Enviado',
+                'entregue': 'Entregue'
+            };
+            return statusMap[status] || status;
+        }
+
+        function verDetalhesPedido(idPedido) {
+            const pedidos = JSON.parse(localStorage.getItem('pedidos')) || [];
+            const pedido = pedidos.find(p => p.id === idPedido);
+            
+            if (!pedido) return;
+
+            const modalBody = document.getElementById('detalhes-pedido');
+            modalBody.innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Informações do Pedido</h6>
+                        <p><strong>Número:</strong> ${pedido.id}</p>
+                        <p><strong>Data:</strong> ${new Date(pedido.data).toLocaleString('pt-BR')}</p>
+                        <p><strong>Status:</strong> <span class="status-badge status-${pedido.status}">${obterTextoStatus(pedido.status)}</span></p>
+                        <p><strong>Pagamento:</strong> ${pedido.formaPagamento}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Valores</h6>
+                        <p><strong>Subtotal:</strong> R$ ${(pedido.total - pedido.taxaEntrega + pedido.desconto).toFixed(2)}</p>
+                        ${pedido.desconto > 0 ? `<p><strong>Desconto:</strong> -R$ ${pedido.desconto.toFixed(2)}</p>` : ''}
+                        <p><strong>Taxa de Entrega:</strong> R$ ${pedido.taxaEntrega.toFixed(2)}</p>
+                        <p><strong>Total:</strong> R$ ${pedido.total.toFixed(2)}</p>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <h6>Itens do Pedido</h6>
+                <div class="mt-3">
+                    ${pedido.itens.map(item => `
+                        <div class="produto-pedido">
+                            <div class="row align-items-center">
+                                <div class="col-1">
+                                    <span style="font-size: 1.5rem;">${item.imagem}</span>
+                                </div>
+                                <div class="col-5">
+                                    <strong>${item.nome}</strong>
+                                    <div class="text-muted small">${item.descricao}</div>
+                                </div>
+                                <div class="col-2 text-center">
+                                    <span>${item.quantidade}x</span>
+                                </div>
+                                <div class="col-2 text-end">
+                                    <span>R$ ${item.preco.toFixed(2)}</span>
+                                </div>
+                                <div class="col-2 text-end">
+                                    <strong>R$ ${(item.preco * item.quantidade).toFixed(2)}</strong>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+                
+                ${pedido.enderecoEntrega ? `
+                    <hr>
+                    <h6>Endereço de Entrega</h6>
+                    <p>
+                        ${pedido.enderecoEntrega.rua}, ${pedido.enderecoEntrega.numero}<br>
+                        ${pedido.enderecoEntrega.complemento ? `${pedido.enderecoEntrega.complemento}<br>` : ''}
+                        ${pedido.enderecoEntrega.bairro} - ${pedido.enderecoEntrega.cidade}<br>
+                        CEP: ${pedido.enderecoEntrega.cep}
+                    </p>
+                ` : ''}
+            `;
+
+            const modal = new bootstrap.Modal(document.getElementById('modalDetalhesPedido'));
+            modal.show();
+        }
+    </script>
+</body>
+</html>

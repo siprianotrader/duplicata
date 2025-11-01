@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minha Conta - Supermercado Rigonato</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .conta-hero {
+            background: linear-gradient(135deg, #6f42c1, #e83e8c);
+            color: white;
+            padding: 100px 0;
+            margin-top: 76px;
+            text-align: center;
+        }
+        .conta-menu {
+            position: sticky;
+            top: 100px;
+        }
+        .conta-card {
+            transition: all 0.3s ease;
+            border: none;
+            border-radius: 15px;
+        }
+        .conta-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .menu-item {
+            padding: 15px 20px;
+            border: none;
+            background: none;
+            text-align: left;
+            width: 100%;
+            border-radius: 10px;
+            margin-bottom: 5px;
+            transition: all 0.3s ease;
+        }
+        .menu-item:hover, .menu-item.active {
+            background: #007bff;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
+            <div class="container">
+                <a class="navbar-brand" href="../index.html">
+                    <img src="../img/logo.png" alt="Supermercado Rigonato" class="logo-real">
+                </a>
+                
+                <div class="d-flex align-items-center mx-3 flex-grow-1" style="max-width: 400px;">
+                    <div class="input-group">
+                        <input type="text" id="barra-busca" class="form-control" placeholder="Buscar produtos...">
+                        <button class="btn btn-primary" onclick="realizarBusca()">🔍</button>
+                    </div>
+                </div>
+                
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item"><a class="nav-link" href="../index.html#categorias">Categorias</a></li>
+                        <li class="nav-item"><a class="nav-link" href="promocoes.html">Promoções</a></li>
+                        <li class="nav-item"><a class="nav-link" href="sobre.html">Sobre Nós</a></li>
+                        <li class="nav-item"><a class="nav-link" href="carrinho.html">Carrinho</a></li>
+                        <li class="nav-item"><a class="nav-link active" href="minhaconta.html">Minha Conta</a></li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <section class="conta-hero">
+        <div class="container">
+            <h1 class="display-4 fw-bold">👤 Minha Conta</h1>
+            <p class="lead">Gerencie seus pedidos e informações pessoais</p>
+        </div>
+    </section>
+
+    <section class="py-5">
+        <div class="container">
+            <div id="area-nao-logado" class="row" style="display: none;">
+                <div class="col-lg-6 mx-auto">
+                    <div class="card conta-card">
+                        <div class="card-body text-center p-5">
+                            <div style="font-size: 4rem;">🔐</div>
+                            <h3 class="mb-4">Acesso Restrito</h3>
+                            <p class="text-muted mb-4">Faça login para acessar sua conta e visualizar seus pedidos.</p>
+                            <button class="btn btn-primary btn-lg" onclick="mostrarLogin()">
+                                Fazer Login
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="area-logado" class="row" style="display: none;">
+                <div class="col-lg-3">
+                    <div class="conta-menu">
+                        <button class="menu-item active" onclick="mostrarSecao('dados-pessoais')">
+                            👤 Dados Pessoais
+                        </button>
+                        <button class="menu-item" onclick="mostrarSecao('meus-pedidos')">
+                            📦 Meus Pedidos
+                        </button>
+                        <button class="menu-item" onclick="mostrarSecao('enderecos')">
+                            🏠 Endereços
+                        </button>
+                        <button class="menu-item" onclick="mostrarSecao('alterar-senha')">
+                            🔒 Alterar Senha
+                        </button>
+                        <hr>
+                        <button class="menu-item text-danger" onclick="fazerLogout()">
+                            🚪 Sair
+                        </button>
+                    </div>
+                </div>
+
+                <div class="col-lg-9">
+                    <!-- Dados Pessoais -->
+                    <div id="dados-pessoais" class="secao-conta">
+                        <div class="card conta-card">
+                            <div class="card-body">
+                                <h4 class="card-title mb-4">👤 Meus Dados</h4>
+                                <form id="form-dados-pessoais">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="edit-nome" class="form-label">Nome Completo</label>
+                                            <input type="text" class="form-control" id="edit-nome" value="${usuario ? usuario.nome : ''}">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="edit-email" class="form-label">Email</label>
+                                            <input type="email" class="form-control" id="edit-email" value="${usuario ? usuario.email : ''}">
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="edit-telefone" class="form-label">Telefone</label>
+                                            <input type="tel" class="form-control" id="edit-telefone" value="${usuario ? usuario.telefone : ''}">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="edit-cpf" class="form-label">CPF</label>
+                                            <input type="text" class="form-control" id="edit-cpf" placeholder="000.000.000-00">
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Meus Pedidos -->
+                    <div id="meus-pedidos" class="secao-conta" style="display: none;">
+                        <div class="card conta-card">
+                            <div class="card-body">
+                                <h4 class="card-title mb-4">📦 Meus Pedidos</h4>
+                                <div id="lista-pedidos">
+                                    <!-- Pedidos serão carregados aqui -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Endereços -->
+                    <div id="enderecos" class="secao-conta" style="display: none;">
+                        <div class="card conta-card">
+                            <div class="card-body">
+                                <h4 class="card-title mb-4">🏠 Meus Endereços</h4>
+                                <div id="lista-enderecos">
+                                    <div class="text-center py-4">
+                                        <div style="font-size: 3rem;">🏠</div>
+                                        <p class="text-muted">Nenhum endereço cadastrado</p>
+                                        <button class="btn btn-primary" onclick="mostrarFormEndereco()">
+                                            Adicionar Endereço
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Alterar Senha -->
+                    <div id="alterar-senha" class="secao-conta" style="display: none;">
+                        <div class="card conta-card">
+                            <div class="card-body">
+                                <h4 class="card-title mb-4">🔒 Alterar Senha</h4>
+                                <form id="form-alterar-senha">
+                                    <div class="mb-3">
+                                        <label for="senha-atual" class="form-label">Senha Atual</label>
+                                        <input type="password" class="form-control" id="senha-atual" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="nova-senha" class="form-label">Nova Senha</label>
+                                        <input type="password" class="form-control" id="nova-senha" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="confirmar-senha" class="form-label">Confirmar Nova Senha</label>
+                                        <input type="password" class="form-control" id="confirmar-senha" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Alterar Senha</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Login -->
+            <div class="modal fade" id="modalLogin" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">🔐 Fazer Login</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form onsubmit="fazerLogin(event)">
+                                <div class="mb-3">
+                                    <label for="login-email" class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="login-email" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="login-senha" class="form-label">Senha</label>
+                                    <input type="password" class="form-control" id="login-senha" required>
+                                </div>
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary">Entrar</button>
+                                </div>
+                            </form>
+                            <div class="text-center mt-3">
+                                <small class="text-muted">
+                                    Não tem conta? <a href="#" onclick="mostrarCadastro()">Cadastre-se</a>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="bg-dark text-white py-4">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4">
+                    <h5>Supermercado Rigonato</h5>
+                    <p>O melhor mercado da região com preços baixos e qualidade garantida.</p>
+                </div>
+                <div class="col-md-4">
+                    <h5>Horário de Funcionamento</h5>
+                    <p>Segunda a Sábado: 8h às 22h<br>Domingos e Feriados: 8h às 20h</p>
+                </div>
+                <div class="col-md-4">
+                    <h5>Contato</h5>
+                    <p>Endereço: Rua Exemplo, 123<br>Telefone: (11) 1234-5678<br>Email: contato@rigonato.com.br</p>
+                </div>
+            </div>
+            <div class="text-center mt-3">
+                <p>&copy; 2023 Supermercado Rigonato. Todos os direitos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            verificarEstadoLogin();
+        });
+
+        function verificarEstadoLogin() {
+            const areaNaoLogado = document.getElementById('area-nao-logado');
+            const areaLogado = document.getElementById('area-logado');
+            
+            if (usuario) {
+                areaNaoLogado.style.display = 'none';
+                areaLogado.style.display = 'flex';
+                carregarPedidos();
+            } else {
+                areaNaoLogado.style.display = 'block';
+                areaLogado.style.display = 'none';
+            }
+        }
+
+        function mostrarLogin() {
+            const modal = new bootstrap.Modal(document.getElementById('modalLogin'));
+            modal.show();
+        }
+
+        function mostrarSecao(secao) {
+            // Esconder todas as seções
+            document.querySelectorAll('.secao-conta').forEach(sec => {
+                sec.style.display = 'none';
+            });
+            
+            // Mostrar seção selecionada
+            document.getElementById(secao).style.display = 'block';
+            
+            // Atualizar menu
+            document.querySelectorAll('.menu-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        }
+
+        function carregarPedidos() {
+            const listaPedidos = document.getElementById('lista-pedidos');
+            const pedidos = JSON.parse(localStorage.getItem('pedidos')) || [];
+            const meusPedidos = pedidos.filter(pedido => pedido.usuario && pedido.usuario.email === usuario.email);
+            
+            if (meusPedidos.length === 0) {
+                listaPedidos.innerHTML = `
+                    <div class="text-center py-4">
+                        <div style="font-size: 3rem;">📦</div>
+                        <p class="text-muted">Nenhum pedido encontrado</p>
+                        <a href="../index.html" class="btn btn-primary">Fazer Primeira Compra</a>
+                    </div>
+                `;
+                return;
+            }
+            
+            listaPedidos.innerHTML = meusPedidos.map(pedido => `
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-3">
+                                <strong>Pedido #${pedido.id}</strong>
+                                <div class="text-muted small">${new Date(pedido.data).toLocaleDateString()}</div>
+                            </div>
+                            <div class="col-md-3">
+                                <span class="badge bg-success">${pedido.status}</span>
+                            </div>
+                            <div class="col-md-3">
+                                <strong>R$ ${pedido.total.toFixed(2)}</strong>
+                            </div>
+                            <div class="col-md-3 text-end">
+                                <button class="btn btn-sm btn-outline-primary" onclick="verDetalhesPedido(${pedido.id})">
+                                    Ver Detalhes
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function verDetalhesPedido(idPedido) {
+            // Implementar visualização de detalhes do pedido
+            mostrarNotificacao('Detalhes do pedido em desenvolvimento...');
+        }
+    </script>
+</body>
+</html>

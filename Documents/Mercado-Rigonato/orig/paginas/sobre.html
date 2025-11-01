@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sobre Nós - Supermercado Rigonato</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .hero-section {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            padding: 100px 0;
+            margin-top: 76px;
+        }
+        .timeline {
+            position: relative;
+            padding: 40px 0;
+        }
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #007bff;
+            transform: translateX(-50%);
+        }
+        .timeline-item {
+            margin-bottom: 50px;
+            position: relative;
+        }
+        .timeline-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        .timeline-item:nth-child(odd) .timeline-content {
+            margin-right: 50%;
+        }
+        .timeline-item:nth-child(even) .timeline-content {
+            margin-left: 50%;
+        }
+        .team-member {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .team-img {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            background: #f8f9fa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Cabeçalho -->
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
+            <div class="container">
+                <a class="navbar-brand" href="../index.html">
+                    <div class="logo-placeholder">
+                        <span>Mercado Rigonato</span>
+                    </div>
+                </a>
+                
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item">
+                            <a class="nav-link" href="../index.html#padaria">Padaria</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="../index.html#acougue">Açougue</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="../index.html#hortifruti">Hortifruti</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="../index.html#mercado">Mercado</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="../index.html#racoes">Rações</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="../index.html#bebidas">Bebidas</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="../index.html#novidades">Novidades</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="sobre.html">Sobre Nós</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6">
+                    <h1 class="display-4 fw-bold">Nossa História</h1>
+                    <p class="lead">Há mais de 20 anos servindo a comunidade com qualidade e preços justos</p>
+                </div>
+                <div class="col-lg-6 text-center">
+                    <div style="font-size: 8rem;">🏪</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Nossa História -->
+    <section class="py-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-6 mb-4">
+                    <h2 class="mb-4">Quem Somos</h2>
+                    <p class="lead">O Supermercado Rigonato nasceu do sonho de oferecer à comunidade produtos de qualidade com preços acessíveis.</p>
+                    <p>Fundado em 2000 pela família Rigonato, começamos como um pequeno armazém e hoje somos referência em qualidade e atendimento na região.</p>
+                    <p>Nossa missão é proporcionar a melhor experiência de compras, com variedade, frescor e preços competitivos.</p>
+                </div>
+                <div class="col-lg-6">
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <div class="text-center p-4 border rounded">
+                                <div style="font-size: 3rem;">🎯</div>
+                                <h5>Missão</h5>
+                                <p>Oferecer produtos de qualidade com preços justos</p>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="text-center p-4 border rounded">
+                                <div style="font-size: 3rem;">👁️</div>
+                                <h5>Visão</h5>
+                                <p>Ser referência em supermercados na região</p>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center p-4 border rounded">
+                                <div style="font-size: 3rem;">💎</div>
+                                <h5>Valores</h5>
+                                <p>Qualidade, honestidade e compromisso</p>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center p-4 border rounded">
+                                <div style="font-size: 3rem;">🤝</div>
+                                <h5>Compromisso</h5>
+                                <p>Com a satisfação dos nossos clientes</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Timeline -->
+    <section class="py-5 bg-light">
+        <div class="container">
+            <h2 class="text-center mb-5">Nossa Trajetória</h2>
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-content">
+                        <h4>2000</h4>
+                        <h5>Fundação</h5>
+                        <p>Abertura do primeiro armazém da família Rigonato no centro da cidade.</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-content">
+                        <h4>2005</h4>
+                        <h5>Primeira Expansão</h5>
+                        <p>Ampliação do espaço físico e aumento do mix de produtos.</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-content">
+                        <h4>2010</h4>
+                        <h5>Modernização</h5>
+                        <p>Implementação de sistema de gestão e treinamento da equipe.</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-content">
+                        <h4>2015</h4>
+                        <h5>Novo Conceito</h5>
+                        <p>Reformulação completa com novo layout e serviços.</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-content">
+                        <h4>2020</h4>
+                        <h5>Presença Digital</h5>
+                        <p>Lançamento do e-commerce e redes sociais.</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-content">
+                        <h4>2023</h4>
+                        <h5>Novo Site</h5>
+                        <p>Lançamento do novo site responsivo e moderno.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Rodapé -->
+    <footer class="bg-dark text-white py-4">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4">
+                    <h5>Supermercado Rigonato</h5>
+                    <p>O melhor mercado da região com preços baixos e qualidade garantida.</p>
+                </div>
+                <div class="col-md-4">
+                    <h5>Horário de Funcionamento</h5>
+                    <p>Segunda a Sábado: 8h às 22h<br>Domingos e Feriados: 8h às 20h</p>
+                </div>
+                <div class="col-md-4">
+                    <h5>Contato</h5>
+                    <p>Endereço: Rua Exemplo, 123<br>Telefone: (11) 1234-5678<br>Email: contato@rigonato.com.br</p>
+                </div>
+            </div>
+            <div class="text-center mt-3">
+                <p>&copy; 2023 Supermercado Rigonato. Todos os direitos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/script.js"></script>
+</body>
+</html>

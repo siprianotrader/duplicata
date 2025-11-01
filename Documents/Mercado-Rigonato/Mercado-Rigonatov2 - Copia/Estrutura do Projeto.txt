@@ -1,0 +1,32 @@
+mercado-rigonato/
+│
+├── index.html
+├── admin.html
+├── css/
+│   ├── style.css
+│   └── admin.css
+├── js/
+│   ├── main.js
+│   ├── admin.js
+│   └── database.js
+├── img/
+│   ├── logo.png
+│   ├── banner/
+│   │   ├── 1.jpg
+│   │   ├── 2.jpg
+│   │   ├── 3.jpg
+│   │   └── 4.jpg
+│   └── produtos/
+│       ├── acougue/
+│       │   ├── picanha.jpg
+│       │   └── alcatra.jpg
+│       ├── padaria/
+│       │   └── pao-frances.jpg
+│       ├── hortifruti/
+│       │   └── tomate.jpg
+│       ├── mercado/
+│       │   └── arroz.jpg
+│       ├── promocao/
+│       │   └── cafe.jpg
+│       └── sem-imagem.jpg
+└── README.md
