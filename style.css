@@ -1,0 +1,191 @@
+/* Estilo com tema de oficina de motos - Frank Motos */
+:root {
+    --primary-color: #ffc107;
+    --secondary-color: #343a40;
+    --accent-color: #dc3545;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: #f8f9fa;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    padding-bottom: 60px;
+}
+
+.navbar {
+    border-bottom: 3px solid var(--primary-color);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.navbar-brand {
+    font-weight: bold;
+    font-size: 1.5rem;
+}
+
+.card {
+    border-radius: 10px;
+    overflow: hidden;
+    transition: transform 0.3s;
+    border: none;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15) !important;
+}
+
+.card-header {
+    font-weight: bold;
+    border-bottom: 2px solid var(--primary-color);
+}
+
+.btn-warning {
+    background-color: var(--primary-color);
+    border: none;
+    color: var(--secondary-color);
+    font-weight: 500;
+    transition: all 0.3s;
+}
+
+.btn-warning:hover {
+    background-color: #e0a800;
+    transform: scale(1.05);
+    color: white;
+}
+
+.btn-dark {
+    background-color: var(--secondary-color);
+    border: none;
+}
+
+.btn-dark:hover {
+    background-color: #23272b;
+}
+
+#btnTopo {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    display: none;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    font-size: 20px;
+    z-index: 1000;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.table thead th {
+    background-color: var(--secondary-color);
+    color: white;
+    border: none;
+}
+
+.breadcrumb {
+    background-color: transparent;
+    padding: 0;
+}
+
+.breadcrumb-item a {
+    color: var(--primary-color);
+}
+
+.form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.25);
+}
+
+/* Estilo para a tabela de clientes */
+.table-hover tbody tr:hover {
+    background-color: rgba(255, 193, 7, 0.1);
+}
+
+.badge {
+    font-size: 0.9rem;
+    padding: 5px 10px;
+}
+
+/* Estilo para os cards da página inicial */
+.display-1 {
+    font-size: 5rem;
+}
+
+/* Estilo para o breadcrumb */
+.breadcrumb-item + .breadcrumb-item::before {
+    color: var(--primary-color);
+}
+
+/* Estilo para o rodapé */
+.footer {
+    background-color: var(--secondary-color);
+    color: white;
+    padding: 20px 0;
+    margin-top: 50px;
+    border-top: 3px solid var(--primary-color);
+}
+
+/* Estilos específicos para impressão */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    
+    body {
+        background-color: white;
+        margin: 0;
+        padding: 20px;
+    }
+    
+    .container-duplicata {
+        border: 2px solid black !important;
+        box-shadow: none !important;
+    }
+    
+    .tabela-valores th {
+        background-color: #eee !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+}
+
+/* Animações */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.card {
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* Estilo para mensagens de alerta personalizadas */
+.alert-custom {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    min-width: 300px;
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
