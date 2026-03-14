@@ -4,11 +4,15 @@ let duplicatas = JSON.parse(localStorage.getItem('duplicatas')) || [];
 // Configurações do credor
 let configCredor = JSON.parse(localStorage.getItem('configCredor')) || {
     nome: "FRANKELLEY STEFANO ALVES AZEVEDO",
+    fantasia: "FRANK MOTOS",
     cnpj: "33.917.740/0001-46",
     ie: "0000001109367",
+    ccm: "11.222-3",
     contato: "(69) 98494-0207",
-    endereco: "AV: MIGUEL VIEIRA FERREIRA, 5454 - Cidade Alta",
-    cidade: "ROLIM DE MOURA - RO",
+    endereco: "AV: MIGUEL VIEIRA FERREIRA, 5454",
+    bairro: "Cidade Alta",
+    cidade: "ROLIM DE MOURA",
+    uf: "RO",
     cep: "76940-000"
 };
 
@@ -125,7 +129,7 @@ document.getElementById('formDuplicata')?.addEventListener('submit', function(e)
     const cep = document.getElementById('cep').value;
     const estado = document.getElementById('estado').value;
     
-    const enderecoCompleto = `${rua}, ${numero} - ${bairro}, ${cidade} - ${estado}${cep ? ', CEP: ' + cep : ''}`;
+    const enderecoCompleto = `${rua}, Nº ${numero} - ${bairro}`;
     
     const duplicata = {
         id: Date.now(),
@@ -145,11 +149,12 @@ document.getElementById('formDuplicata')?.addEventListener('submit', function(e)
             endereco: enderecoCompleto,
             cidade: cidade,
             cep: cep,
-            municipio: document.getElementById('municipio').value
+            municipio: document.getElementById('municipio').value || cidade
         },
         valorExtenso: document.getElementById('valorExtenso').value,
         dataExtenso: document.getElementById('dataEmissaoFormatada').value,
-        status: 'pendente'
+        status: 'pendente',
+        repm: '100'
     };
     
     duplicatas.push(duplicata);
@@ -167,7 +172,7 @@ function carregarTabelaClientes() {
     tbody.innerHTML = '';
     
     if (duplicatas.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="text-center">Nenhum cliente cadastrado</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center">Nenhum cliente cadastrado</td></tr>';
         return;
     }
     
@@ -182,9 +187,10 @@ function carregarTabelaClientes() {
             <td>${formatarDataBR(dup.vencimento)}</td>
             <td><span class="badge bg-${dup.status === 'pago' ? 'success' : 'danger'}">${dup.status}</span></td>
             <td>
-                <button class="btn btn-sm btn-warning" onclick="imprimirDuplicata(${dup.id})"><i class="bi bi-printer"></i></button>
-                <button class="btn btn-sm btn-success" onclick="marcarPago(${dup.id})"><i class="bi bi-check-circle"></i></button>
-                <button class="btn btn-sm btn-danger" onclick="excluirDuplicata(${dup.id})"><i class="bi bi-trash"></i></button>
+                <button class="btn btn-sm btn-warning" onclick="imprimirDuplicata(${dup.id})" title="Imprimir Duplicata"><i class="bi bi-printer"></i></button>
+                <button class="btn btn-sm btn-info" onclick="imprimirContrato(${dup.id})" title="Imprimir Contrato"><i class="bi bi-file-text"></i></button>
+                <button class="btn btn-sm btn-success" onclick="marcarPago(${dup.id})" title="Marcar como Pago"><i class="bi bi-check-circle"></i></button>
+                <button class="btn btn-sm btn-danger" onclick="excluirDuplicata(${dup.id})" title="Excluir"><i class="bi bi-trash"></i></button>
             </td>
         `;
     });
@@ -196,7 +202,7 @@ function formatarDataBR(dataString) {
     return dataString.split('-').reverse().join('/');
 }
 
-// Função para imprimir duplicata no formato da imagem
+// Função para imprimir duplicata no formato A4
 function imprimirDuplicata(id) {
     const duplicata = duplicatas.find(d => d.id === id);
     if (!duplicata) return;
@@ -210,183 +216,248 @@ function imprimirDuplicata(id) {
         <head>
             <title>Duplicata - ${duplicata.devedor.nome}</title>
             <style>
+                /* ESTILO PARA FOLHA A4 */
+                @page {
+                    size: A4;
+                    margin: 1.5cm;
+                }
                 body { 
                     font-family: 'Courier New', monospace; 
-                    margin: 20px;
+                    margin: 0;
+                    padding: 0;
                     background: #fff;
+                    width: 210mm;
+                    min-height: 297mm;
                 }
                 .container-duplicata {
-                    max-width: 800px;
+                    width: 100%;
+                    max-width: 180mm;
                     margin: 0 auto;
-                    border: 2px solid #000;
-                    padding: 20px;
+                    padding: 10mm 0;
                 }
-                .header {
+                .titulo-principal {
                     text-align: center;
-                    border-bottom: 2px dashed #000;
-                    padding-bottom: 10px;
-                    margin-bottom: 15px;
-                }
-                .header h1 {
-                    font-size: 24px;
+                    font-size: 28px;
                     font-weight: bold;
-                    margin: 0;
+                    margin-bottom: 10mm;
                     text-transform: uppercase;
                 }
-                .header h2 {
-                    font-size: 18px;
-                    margin: 5px 0;
-                    font-weight: normal;
+                .info-credor {
+                    border: 1px solid #000;
+                    padding: 3mm;
+                    margin-bottom: 5mm;
+                    font-size: 12pt;
                 }
-                .info-empresa {
-                    border-bottom: 1px solid #000;
-                    padding-bottom: 10px;
-                    margin-bottom: 15px;
-                    font-size: 14px;
+                .linha-credor {
+                    display: flex;
+                    justify-content: space-between;
+                    margin-bottom: 1mm;
                 }
                 .tabela-valores {
                     width: 100%;
                     border-collapse: collapse;
-                    margin-bottom: 15px;
+                    margin-bottom: 5mm;
                     border: 1px solid #000;
+                    font-size: 12pt;
                 }
                 .tabela-valores th, .tabela-valores td {
                     border: 1px solid #000;
-                    padding: 8px;
+                    padding: 2mm;
                     text-align: center;
-                    font-size: 14px;
                 }
                 .tabela-valores th {
                     background-color: #f0f0f0;
                     font-weight: bold;
                 }
-                .juros-condicoes {
-                    border-bottom: 1px solid #000;
-                    padding-bottom: 10px;
-                    margin-bottom: 15px;
-                    font-size: 14px;
+                .desconto-condicoes {
+                    border: 1px solid #000;
+                    padding: 2mm;
+                    margin-bottom: 5mm;
+                    font-weight: bold;
+                    font-size: 12pt;
                 }
                 .sacado {
-                    border-bottom: 1px solid #000;
-                    padding-bottom: 10px;
-                    margin-bottom: 15px;
-                    font-size: 14px;
+                    border: 1px solid #000;
+                    padding: 3mm;
+                    margin-bottom: 3mm;
+                    font-size: 12pt;
                 }
-                .sacado p {
-                    margin: 5px 0;
+                .linha-sacado {
+                    display: flex;
+                    margin-bottom: 1mm;
                 }
-                .valor-extenso {
-                    border-bottom: 1px solid #000;
-                    padding-bottom: 10px;
-                    margin-bottom: 15px;
-                    font-size: 14px;
+                .label {
+                    font-weight: bold;
+                    width: 40mm;
                 }
-                .reconhecimento {
-                    border-bottom: 1px solid #000;
-                    padding-bottom: 10px;
-                    margin-bottom: 15px;
-                    font-size: 14px;
-                    text-align: justify;
+                .repm {
+                    border: 1px solid #000;
+                    padding: 1mm 3mm;
+                    margin-bottom: 5mm;
+                    font-weight: bold;
+                    font-size: 12pt;
                 }
-                .assinatura {
-                    margin-top: 30px;
-                    font-size: 14px;
+                .multa-info {
+                    border: 1px solid #000;
+                    padding: 2mm;
+                    margin-bottom: 5mm;
+                    background-color: #fff3cd;
+                    font-size: 12pt;
+                    text-align: center;
+                    font-weight: bold;
+                }
+                .rodape {
+                    display: grid;
+                    grid-template-columns: repeat(3, 1fr);
+                    margin-top: 10mm;
+                    font-size: 12pt;
+                }
+                .assinatura-container {
+                    margin-top: 15mm;
+                    text-align: left;
+                }
+                .assinatura-label {
+                    font-weight: bold;
+                    margin-right: 5mm;
                 }
                 .linha-assinatura {
                     border-bottom: 1px solid #000;
-                    width: 300px;
-                    margin-top: 5px;
+                    width: 100%;
+                    margin-top: 2mm;
                 }
                 .no-print {
-                    margin-top: 20px;
+                    margin-top: 10mm;
                     text-align: center;
                 }
                 .btn-print {
                     background: #ffc107;
                     border: none;
-                    padding: 10px 20px;
-                    font-size: 16px;
+                    padding: 3mm 6mm;
+                    font-size: 14pt;
                     cursor: pointer;
-                    margin: 0 5px;
-                    border-radius: 5px;
+                    margin: 0 2mm;
+                    border-radius: 2mm;
                 }
                 .btn-close {
                     background: #6c757d;
                     color: white;
                     border: none;
-                    padding: 10px 20px;
-                    font-size: 16px;
+                    padding: 3mm 6mm;
+                    font-size: 14pt;
                     cursor: pointer;
-                    margin: 0 5px;
-                    border-radius: 5px;
+                    margin: 0 2mm;
+                    border-radius: 2mm;
+                }
+                .desenvolvido {
+                    margin-top: 10mm;
+                    text-align: center;
+                    font-size: 10pt;
+                    color: #666;
+                    border-top: 1px dashed #999;
+                    padding-top: 2mm;
                 }
                 @media print {
                     .no-print { display: none; }
-                    body { margin: 0; padding: 15px; }
+                    .desenvolvido { display: none; }
                 }
             </style>
         </head>
         <body>
             <div class="container-duplicata">
-                <div class="header">
-                    <h1>FRANK MOTOS</h1>
-                    <h2>FRANKELLEY STEFANO ALVES AZEVEDO ME</h2>
-                </div>
+                <div class="titulo-principal">Duplicata</div>
                 
-                <div class="info-empresa">
-                    <strong>${configCredor.endereco}</strong><br>
-                    Telefone: ${configCredor.contato} CNPJ: ${configCredor.cnpj} INS.ESTADUAL: ${configCredor.ie}
+                <div class="info-credor">
+                    <div class="linha-credor">
+                        <span><strong>${configCredor.nome} ${configCredor.fantasia ? '- ' + configCredor.fantasia : ''}</strong></span>
+                    </div>
+                    <div class="linha-credor">
+                        <span>${configCredor.endereco} - ${configCredor.bairro}</span>
+                        <span>${configCredor.cidade} - ${configCredor.uf}</span>
+                    </div>
+                    <div class="linha-credor">
+                        <span>C.N.P.J (MF) Nº ${configCredor.cnpj}</span>
+                        <span>C.C.M Nº ${configCredor.ccm}</span>
+                    </div>
+                    <div class="linha-credor">
+                        <span>Mun. ${configCredor.cidade} - ${configCredor.uf}</span>
+                        <span>DATA DA EMISSÃO: ${dataEmissaoFormatada}</span>
+                    </div>
                 </div>
                 
                 <table class="tabela-valores">
                     <tr>
-                        <th>VALOR</th>
-                        <th>NUMERO</th>
-                        <th>VALOR</th>
-                        <th>NUMERO</th>
+                        <th>NF FATURA N°</th>
+                        <th>NF FAT/F/Duplicação - Valor</th>
+                        <th>Duplicação de Ordem</th>
                         <th>Vencimento</th>
-                        <th>Para Uso Da Instituição Financeira</th>
+                        <th>PARA USO DA INSTITUIÇÃO FINANCEIRA</th>
                     </tr>
                     <tr>
-                        <td>R$ ${parseFloat(duplicata.valor).toFixed(2)}</td>
                         <td>${duplicata.numNF || '______'}</td>
                         <td>R$ ${parseFloat(duplicata.valor).toFixed(2)}</td>
-                        <td>${duplicata.numDuplicata ? duplicata.numDuplicata : '1/1'}</td>
+                        <td>${duplicata.numDuplicata || '038758-P'}</td>
                         <td>${vencimentoFormatado}</td>
                         <td></td>
                     </tr>
                 </table>
                 
-                <div class="juros-condicoes">
-                    <div style="display: flex; justify-content: space-between;">
-                        <span>Cobrar Juros _____ % Após o Vencimento _____ Até _____</span>
-                        <span>Condições Especiais _____</span>
-                    </div>
-                    <div style="margin-top: 5px;">
-                        <strong>CUPOM N°: ${duplicata.numNF || '______'}</strong>
-                    </div>
+                <div class="desconto-condicoes">
+                    DESCONTO DE CONDIÇÕES ESPECIAIS<br>
+                    % SOBRE ATÉ
+                </div>
+                
+                <!-- INFORMAÇÕES DE MULTA E MORA -->
+                <div class="multa-info">
+                    ⚠️ APÓS O VENCIMENTO: MULTA DE 2% + MORA DIÁRIA DE R$ 2,14 ⚠️
                 </div>
                 
                 <div class="sacado">
-                    <p><strong>Nome do sacado:</strong> ${duplicata.devedor.nome ? duplicata.devedor.nome.toUpperCase() : 'NOME DO DEVEDOR'}</p>
-                    <p><strong>Endereço:</strong> ${formatarEndereco(duplicata.devedor)}</p>
-                    <p><strong>Município:</strong> ${duplicata.devedor.cidade || 'ROLIM DE MOURA'} <span style="margin-left: 50px;"><strong>Praça de Pagamento</strong> ${duplicata.devedor.cidade || 'ROLIM DE MOURA'}</span></p>
-                    <p><strong>Estado:</strong> ${duplicata.devedor.estado || 'RO'} <span style="margin-left: 50px;"><strong>Inscrição no CNPJ/CPF:</strong> ${formatarCPF(duplicata.devedor.cpf)}</span></p>
+                    <div class="linha-sacado">
+                        <span class="label">NOME DO SACADO:</span>
+                        <span>${duplicata.devedor.nome.toUpperCase()}</span>
+                    </div>
+                    <div class="linha-sacado">
+                        <span class="label">ENDEREÇO:</span>
+                        <span>${duplicata.devedor.rua.toUpperCase()}, Nº ${duplicata.devedor.numero} - ${duplicata.devedor.bairro.toUpperCase()}</span>
+                    </div>
+                    <div class="linha-sacado">
+                        <span class="label">CEP:</span>
+                        <span>${duplicata.devedor.cep || '______'}</span>
+                        <span style="margin-left: 15mm;" class="label">MUNICÍPIO:</span>
+                        <span>${duplicata.devedor.cidade.toUpperCase()}</span>
+                    </div>
+                    <div class="linha-sacado">
+                        <span class="label">PRAÇA DE PAGAMENTO:</span>
+                        <span>${duplicata.devedor.cidade.toUpperCase()}</span>
+                        <span style="margin-left: 15mm;" class="label">CNPJ / CPF (MF):</span>
+                        <span>${formatarCPF(duplicata.devedor.cpf)}</span>
+                    </div>
+                    <div class="linha-sacado">
+                        <span class="label">Insc. Est. Nº:</span>
+                        <span>ISENTO</span>
+                    </div>
                 </div>
                 
-                <div class="valor-extenso">
-                    <strong>Valor por extenso:</strong> ${duplicata.valorExtenso ? duplicata.valorExtenso.toUpperCase() : 'SETENTA REAIS E OITENTA E TRÊS CENTAVOS'}
-                    <span style="margin-left: 20px;">*******************************</span>
+                <!-- REP.M: VALOR PADRÃO 30 - ALTERE AQUI SE NECESSÁRIO -->
+                <div class="repm">
+                    REP.M: 30
                 </div>
                 
-                <div class="reconhecimento">
-                    Reconhece(emos) a exatidão desta DUPLICATA de venda Mercantil na Importância acima que pagarei(emos) a FRANKELLEY STEFANO ALVES AZEVEDO ME (FRANK MOTOS)<br>
-                    Ou, a sua ordem na praça e vencimento indicado
+                <div class="rodape">
+                    <div>VALOR POR EXTENSO<br>${duplicata.valorExtenso.toUpperCase()}</div>
+                    <div>DEVEDOR<br>${duplicata.devedor.nome.toUpperCase()}</div>
+                    <div>PRAÇA DE PAGAMENTO<br>${duplicata.devedor.cidade.toUpperCase()}</div>
                 </div>
                 
-                <div class="assinatura">
-                    <p><strong>Assinatura do Sacado</strong></p>
+                <!-- ASSINATURA SIMPLIFICADA -->
+                <div class="assinatura-container">
+                    <span class="assinatura-label">ASSINATURA:</span>
                     <div class="linha-assinatura"></div>
+                </div>
+                
+                <!-- CRÉDITO DO DESENVOLVEDOR (aparece apenas na tela, não na impressão) -->
+                <div class="desenvolvido no-print">
+                    Este site foi desenvolvido por SIPRIANO WEB em parceria com FRANK MOTOS
                 </div>
                 
                 <div class="no-print">
@@ -413,14 +484,14 @@ function formatarEndereco(devedor) {
     }
     
     if (devedor.numero) {
-        endereco += ', ' + devedor.numero;
+        endereco += ', Nº ' + devedor.numero;
     }
     
     if (devedor.bairro) {
         endereco += ' - ' + devedor.bairro.toUpperCase();
     }
     
-    return endereco || 'RUA DOS CRISTAMENTOS, 0 - CENTRO';
+    return endereco || 'RUA DOS CRISTAMENTOS, Nº 0 - CENTRO';
 }
 
 // Função auxiliar para formatar CPF/CNPJ
@@ -484,11 +555,15 @@ function limparTodosDados() {
         duplicatas = [];
         configCredor = {
             nome: "FRANKELLEY STEFANO ALVES AZEVEDO",
+            fantasia: "FRANK MOTOS",
             cnpj: "33.917.740/0001-46",
             ie: "0000001109367",
+            ccm: "11.222-3",
             contato: "(69) 98494-0207",
-            endereco: "AV: MIGUEL VIEIRA FERREIRA, 5454 - Cidade Alta",
-            cidade: "ROLIM DE MOURA - RO",
+            endereco: "AV: MIGUEL VIEIRA FERREIRA, 5454",
+            bairro: "Cidade Alta",
+            cidade: "ROLIM DE MOURA",
+            uf: "RO",
             cep: "76940-000"
         };
         carregarTabelaClientes();
@@ -569,7 +644,33 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         };
     }
+    
+    // Adicionar créditos do desenvolvedor em todas as páginas
+    adicionarCreditosDesenvolvedor();
 });
+
+// Função para adicionar créditos do desenvolvedor em todas as páginas
+function adicionarCreditosDesenvolvedor() {
+    // Verificar se já existe um rodapé
+    let footer = document.querySelector('footer');
+    
+    if (!footer) {
+        // Criar rodapé se não existir
+        footer = document.createElement('footer');
+        footer.className = 'footer mt-5';
+        document.body.appendChild(footer);
+    }
+    
+    // Adicionar créditos
+    footer.innerHTML = `
+        <div class="container text-center">
+            <hr>
+            <p class="text-muted">
+                <i class="bi bi-code-slash"></i> Este site foi desenvolvido por <strong>SIPRIANO WEB</strong> em parceria com <strong>FRANK MOTOS</strong>
+            </p>
+        </div>
+    `;
+}
 
 // Função para voltar ao topo
 function topFunction() {
@@ -583,11 +684,15 @@ document.getElementById('formConfigCredor')?.addEventListener('submit', function
     
     configCredor = {
         nome: document.getElementById('configNomeCredor').value,
+        fantasia: document.getElementById('configFantasia').value,
         cnpj: document.getElementById('configCnpj').value,
         ie: document.getElementById('configIE').value,
+        ccm: document.getElementById('configCCM').value,
         contato: document.getElementById('configContato').value,
         endereco: document.getElementById('configEndereco').value,
+        bairro: document.getElementById('configBairro').value,
         cidade: document.getElementById('configCidade').value,
+        uf: document.getElementById('configUF').value,
         cep: document.getElementById('configCep').value
     };
     
@@ -600,11 +705,15 @@ function carregarConfigAdmin() {
     const nome = document.getElementById('configNomeCredor');
     if (nome) {
         document.getElementById('configNomeCredor').value = configCredor.nome;
+        document.getElementById('configFantasia').value = configCredor.fantasia || '';
         document.getElementById('configCnpj').value = configCredor.cnpj;
         document.getElementById('configIE').value = configCredor.ie;
+        document.getElementById('configCCM').value = configCredor.ccm || '11.222-3';
         document.getElementById('configContato').value = configCredor.contato;
         document.getElementById('configEndereco').value = configCredor.endereco;
+        document.getElementById('configBairro').value = configCredor.bairro;
         document.getElementById('configCidade').value = configCredor.cidade;
+        document.getElementById('configUF').value = configCredor.uf;
         document.getElementById('configCep').value = configCredor.cep;
     }
 }
