@@ -1,0 +1,776 @@
+// ===== BANCO DE DADOS LOCAL =====
+let duplicatas = JSON.parse(localStorage.getItem('duplicatas')) || [];
+let pontuacoes = JSON.parse(localStorage.getItem('pontuacoes')) || {};
+let solicitacoesPagamento = JSON.parse(localStorage.getItem('solicitacoesPagamento')) || [];
+let notificacoes = JSON.parse(localStorage.getItem('notificacoes')) || [];
+
+let configCredor = JSON.parse(localStorage.getItem('configCredor')) || {
+    nome: "FRANKELLEY STEFANO ALVES AZEVEDO", fantasia: "FRANK MOTOS", cnpj: "33.917.740/0001-46",
+    ie: "0000001109367", ccm: "11.222-3", contato: "(69) 98494-0207",
+    endereco: "AV: MIGUEL VIEIRA FERREIRA, 5454", bairro: "Cidade Alta",
+    cidade: "ROLIM DE MOURA", uf: "RO", cep: "76940-000"
+};
+
+// ===== FUNÇÕES AUXILIARES =====
+function formatarDataBR(dataString) { if (!dataString) return ''; return dataString.split('-').reverse().join('/'); }
+function formatarDataExtenso(dataString) {
+    if (!dataString) return '';
+    const meses = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+    const data = new Date(dataString + 'T12:00:00');
+    return `${data.getDate()} de ${meses[data.getMonth()]} de ${data.getFullYear()}`;
+}
+function formatarCPF(cpf) {
+    if (!cpf) return '';
+    cpf = cpf.replace(/\D/g, '');
+    if (cpf.length === 11) return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+    if (cpf.length === 14) return cpf.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+    return cpf;
+}
+function getPrimeiroNome(nomeCompleto) { return nomeCompleto ? nomeCompleto.split(' ')[0] : 'Cliente'; }
+function numeroPorExtenso(numero) {
+    const unidades = ['', 'um', 'dois', 'três', 'quatro', 'cinco', 'seis', 'sete', 'oito', 'nove'];
+    const dezA19 = ['dez', 'onze', 'doze', 'treze', 'quatorze', 'quinze', 'dezesseis', 'dezessete', 'dezoito', 'dezenove'];
+    const dezenas = ['', 'dez', 'vinte', 'trinta', 'quarenta', 'cinquenta', 'sessenta', 'setenta', 'oitenta', 'noventa'];
+    const centenas = ['', 'cento', 'duzentos', 'trezentos', 'quatrocentos', 'quinhentos', 'seiscentos', 'setecentos', 'oitocentos', 'novecentos'];
+
+    if (numero === 0) return 'zero reais';
+    if (numero === 1) return 'um real';
+    let extenso = '';
+    let inteiro = Math.floor(numero);
+    let centavos = Math.round((numero - inteiro) * 100);
+    if (inteiro >= 1000) {
+        let milhares = Math.floor(inteiro / 1000);
+        inteiro = inteiro % 1000;
+        if (milhares === 1) extenso += 'um mil';
+        else extenso += converterCentena(milhares, centenas, dezenas, unidades, dezA19) + ' mil';
+        if (inteiro > 0) extenso += ' e ';
+    }
+    extenso += converterCentena(inteiro, centenas, dezenas, unidades, dezA19);
+    extenso += ' reais';
+    if (centavos > 0) extenso += ' e ' + converterCentena(centavos, centenas, dezenas, unidades, dezA19) + ' centavos';
+    return extenso;
+}
+function converterCentena(num, centenas, dezenas, unidades, dezA19) {
+    if (num === 0) return '';
+    if (num === 100) return 'cem';
+    let resultado = '';
+    let centena = Math.floor(num / 100);
+    let resto = num % 100;
+    if (centena > 0) { resultado += centenas[centena]; if (resto > 0) resultado += ' e '; }
+    if (resto >= 20) {
+        let dezena = Math.floor(resto / 10);
+        let unidade = resto % 10;
+        resultado += dezenas[dezena];
+        if (unidade > 0) resultado += ' e ' + unidades[unidade];
+    } else if (resto >= 10) resultado += dezA19[resto - 10];
+    else if (resto > 0) resultado += unidades[resto];
+    return resultado;
+}
+function calcularVencimentoParcela(dataBase, numeroParcela) {
+    const data = new Date(dataBase);
+    data.setMonth(data.getMonth() + (numeroParcela - 1));
+    return data.toISOString().slice(0, 10);
+}
+
+// ===== FUNÇÕES DE NOTIFICAÇÃO =====
+function adicionarNotificacao(clienteCpf, clienteNome, titulo, mensagem, tipo) {
+    const notificacao = {
+        id: Date.now(),
+        cpf: clienteCpf,
+        nome: clienteNome,
+        titulo: titulo,
+        mensagem: mensagem,
+        tipo: tipo,
+        data: new Date().toLocaleString(),
+        lida: false
+    };
+    notificacoes.push(notificacao);
+    localStorage.setItem('notificacoes', JSON.stringify(notificacoes));
+    
+    // Exibir notificação na tela se estiver na página do cliente
+    if (window.location.pathname.includes('frankscore.html')) {
+        const notifArea = document.getElementById('notificacaoArea');
+        if (notifArea) {
+            const bgColor = tipo === 'success' ? '#28a745' : tipo === 'warning' ? '#ffc107' : '#17a2b8';
+            const icone = tipo === 'success' ? 'check-circle-fill' : tipo === 'warning' ? 'exclamation-triangle-fill' : 'info-circle-fill';
+            const notif = document.createElement('div');
+            notif.className = 'notificacao';
+            notif.style.backgroundColor = bgColor;
+            notif.style.color = '#fff';
+            notif.innerHTML = `<i class="bi bi-${icone}"></i> <strong>${titulo}</strong><br>${mensagem}`;
+            notifArea.appendChild(notif);
+            setTimeout(() => { notif.remove(); }, 8000);
+        }
+    }
+    return notificacao;
+}
+
+// ===== FUNÇÕES FRANKSCORE =====
+function getNivelScore(pontos) {
+    if (pontos >= 1000) return { nome: "DIAMANTE", cor: "nivel-diamante", icone: "💎", descricao: "Cliente Diamante - Benefícios Especiais!" };
+    if (pontos >= 750) return { nome: "PLATINA", cor: "nivel-platina", icone: "🏆", descricao: "Cliente Platina - Descontos especiais!" };
+    if (pontos >= 500) return { nome: "OURO", cor: "nivel-ouro", icone: "🥇", descricao: "Cliente Ouro - Prioridade no atendimento!" };
+    if (pontos >= 250) return { nome: "PRATA", cor: "nivel-prata", icone: "🥈", descricao: "Cliente Prata - Continue acumulando pontos!" };
+    return { nome: "BRONZE", cor: "nivel-bronze", icone: "🥉", descricao: "Cliente Bronze - Realize serviços para ganhar pontos!" };
+}
+function calcularPorcentagemScore(pontos) { return (pontos / 1000) * 100; }
+
+function adicionarPontos(cpf, pontos, motivo) {
+    if (!pontuacoes[cpf]) pontuacoes[cpf] = { pontos: 0, historico: [] };
+    let novosPontos = Math.min(1000, pontuacoes[cpf].pontos + pontos);
+    pontuacoes[cpf].pontos = novosPontos;
+    pontuacoes[cpf].historico.unshift({ data: new Date().toLocaleString(), pontos: pontos, motivo: motivo, totalAtual: novosPontos });
+    localStorage.setItem('pontuacoes', JSON.stringify(pontuacoes));
+    return novosPontos;
+}
+
+function removerPontos(cpf, pontos, motivo) {
+    if (!pontuacoes[cpf]) pontuacoes[cpf] = { pontos: 0, historico: [] };
+    let novosPontos = Math.max(0, pontuacoes[cpf].pontos - pontos);
+    pontuacoes[cpf].pontos = novosPontos;
+    pontuacoes[cpf].historico.unshift({ data: new Date().toLocaleString(), pontos: -pontos, motivo: motivo, totalAtual: novosPontos });
+    localStorage.setItem('pontuacoes', JSON.stringify(pontuacoes));
+    return novosPontos;
+}
+
+// ===== FUNÇÕES DE PAGAMENTO (CLIENTE) =====
+function solicitarPagamento() {
+    const parcelaId = sessionStorage.getItem('parcelaId');
+    const cpf = sessionStorage.getItem('clienteCpf');
+    
+    if (!parcelaId || !cpf) { alert('Erro: Parcela não identificada!'); return; }
+    
+    const index = duplicatas.findIndex(d => d.id == parcelaId);
+    if (index !== -1 && duplicatas[index].status === 'pendente') {
+        duplicatas[index].status = 'aguardando_confirmacao';
+        duplicatas[index].dataSolicitacao = new Date().toLocaleString();
+        localStorage.setItem('duplicatas', JSON.stringify(duplicatas));
+        
+        solicitacoesPagamento.push({
+            id: Date.now(),
+            parcelaId: parcelaId,
+            cpf: cpf,
+            clienteNome: duplicatas[index].devedor.nome,
+            parcela: duplicatas[index].parcela,
+            totalParcelas: duplicatas[index].totalParcelas,
+            valor: duplicatas[index].valor,
+            dataSolicitacao: new Date().toLocaleString(),
+            status: 'pendente_confirmacao'
+        });
+        localStorage.setItem('solicitacoesPagamento', JSON.stringify(solicitacoesPagamento));
+        
+        adicionarNotificacao(cpf, duplicatas[index].devedor.nome, 'Pagamento Solicitado', 
+            `Sua solicitação de pagamento da ${duplicatas[index].parcela}ª parcela foi enviada. Aguarde a confirmação da loja.`, 'warning');
+        
+        alert('✅ Solicitação de pagamento enviada! Aguarde a confirmação da loja.');
+        window.location.href = 'frankscore.html';
+    } else {
+        alert('Esta parcela já foi paga ou está aguardando confirmação!');
+    }
+}
+
+// ===== FUNÇÕES ADMIN (CONFIRMAÇÃO DE PAGAMENTO) =====
+function carregarSolicitacoesAdmin() {
+    const tbody = document.getElementById('tabelaSolicitacoes');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    const solicitacoesPendentes = solicitacoesPagamento.filter(s => s.status === 'pendente_confirmacao');
+    
+    const alertDiv = document.getElementById('alertNovasSolicitacoes');
+    if (alertDiv) {
+        if (solicitacoesPendentes.length > 0) {
+            alertDiv.style.display = 'block';
+            alertDiv.innerHTML = `<i class="bi bi-bell-fill"></i> <strong>🔔 ${solicitacoesPendentes.length} NOVA(S) SOLICITAÇÃO(ÕES) DE PAGAMENTO AGUARDANDO CONFIRMAÇÃO!</strong>`;
+        } else {
+            alertDiv.style.display = 'none';
+        }
+    }
+    
+    if (solicitacoesPagamento.length === 0) {
+        tbody.innerHTML = '缘<td colspan="6" class="text-center text-muted">📭 Nenhuma solicitação de pagamento encontrada</td> </tr>';
+        return;
+    }
+    
+    solicitacoesPagamento.sort((a, b) => new Date(b.dataSolicitacao) - new Date(a.dataSolicitacao));
+    
+    solicitacoesPagamento.forEach(sol => {
+        const row = tbody.insertRow();
+        let statusClass = '';
+        let statusText = '';
+        let actionsHtml = '';
+        
+        if (sol.status === 'confirmado') {
+            statusClass = 'status-confirmado';
+            statusText = '✅ CONFIRMADO';
+            actionsHtml = '<span class="text-success"><i class="bi bi-check-circle-fill"></i> Confirmado</span>';
+        } else if (sol.status === 'nao_confirmado') {
+            statusClass = 'status-nao-confirmado';
+            statusText = '❌ NÃO CONFIRMADO';
+            actionsHtml = '<span class="text-danger"><i class="bi bi-x-circle-fill"></i> Negado</span>';
+        } else if (sol.status === 'pendente_confirmacao') {
+            statusClass = 'status-pendente-confirmacao';
+            statusText = '⏳ AGUARDANDO';
+            actionsHtml = `
+                <div class="d-flex gap-2 justify-content-center">
+                    <button class="btn btn-confirmar" onclick="confirmarPagamentoAdmin(${sol.id})" title="Confirmar pagamento">
+                        <i class="bi bi-check-circle-fill"></i> Confirmar
+                    </button>
+                    <button class="btn btn-negar" onclick="negarPagamentoAdmin(${sol.id})" title="Negar pagamento">
+                        <i class="bi bi-x-circle-fill"></i> Negar
+                    </button>
+                </div>
+            `;
+        } else {
+            statusClass = 'status-pendente';
+            statusText = '⏰ PENDENTE';
+            actionsHtml = '<span class="text-muted">Aguardando</span>';
+        }
+        
+        row.innerHTML = `
+            <td class="text-center align-middle"><strong>${sol.clienteNome}</strong> </td>
+            <td class="text-center align-middle">${sol.parcela}ª / ${sol.totalParcelas}</td>
+            <td class="text-center align-middle"><strong class="text-success">R$ ${parseFloat(sol.valor).toFixed(2)}</strong></td>
+            <td class="text-center align-middle">${sol.dataSolicitacao}</td>
+            <td class="text-center align-middle"><span class="${statusClass}">${statusText}</span></td>
+            <td class="text-center align-middle">${actionsHtml}</td>
+        `;
+    });
+}
+
+function confirmarPagamentoAdmin(solicitacaoId) {
+    const solicitacao = solicitacoesPagamento.find(s => s.id === solicitacaoId);
+    if (!solicitacao) return;
+    
+    const parcelaIndex = duplicatas.findIndex(d => d.id == solicitacao.parcelaId);
+    if (parcelaIndex !== -1) {
+        duplicatas[parcelaIndex].status = 'pago';
+        duplicatas[parcelaIndex].dataPagamento = new Date().toISOString().slice(0, 10);
+        localStorage.setItem('duplicatas', JSON.stringify(duplicatas));
+        
+        solicitacao.status = 'confirmado';
+        localStorage.setItem('solicitacoesPagamento', JSON.stringify(solicitacoesPagamento));
+        
+        const novosPontos = adicionarPontos(solicitacao.cpf, 7, 'Pagamento em Dia');
+        adicionarPontos(solicitacao.cpf, 2, 'Parcela Paga');
+        
+        adicionarNotificacao(solicitacao.cpf, solicitacao.clienteNome, 'Pagamento Confirmado!', 
+            `Seu pagamento da ${solicitacao.parcela}ª parcela foi confirmado! +9 pontos adicionados. Seu score agora é ${novosPontos} pontos.`, 'success');
+        
+        alert(`✅ Pagamento confirmado! Cliente notificado.`);
+        carregarSolicitacoesAdmin();
+        atualizarEstatisticas();
+        carregarTabelaClientes();
+    }
+}
+
+function negarPagamentoAdmin(solicitacaoId) {
+    const solicitacao = solicitacoesPagamento.find(s => s.id === solicitacaoId);
+    if (!solicitacao) return;
+    
+    const parcelaIndex = duplicatas.findIndex(d => d.id == solicitacao.parcelaId);
+    if (parcelaIndex !== -1) {
+        duplicatas[parcelaIndex].status = 'pendente';
+        localStorage.setItem('duplicatas', JSON.stringify(duplicatas));
+        
+        solicitacao.status = 'nao_confirmado';
+        localStorage.setItem('solicitacoesPagamento', JSON.stringify(solicitacoesPagamento));
+        
+        adicionarNotificacao(solicitacao.cpf, solicitacao.clienteNome, 'Pagamento Não Confirmado', 
+            `Seu pagamento da ${solicitacao.parcela}ª parcela não foi confirmado. Entre em contato com a loja para regularizar.`, 'danger');
+        
+        alert(`⚠️ Pagamento negado! Cliente notificado.`);
+        carregarSolicitacoesAdmin();
+        carregarTabelaClientes();
+    }
+}
+
+// ===== FUNÇÕES DO FORMULÁRIO =====
+function buscarClientePorCPF() {
+    const cpf = document.getElementById('cpfDevedor').value.replace(/\D/g, '');
+    if (cpf.length < 11) return;
+    
+    const clienteExistente = duplicatas.find(d => d.devedor.cpf === cpf);
+    if (clienteExistente) {
+        document.getElementById('clienteExistenteAlert').style.display = 'block';
+        document.getElementById('nomeDevedor').value = clienteExistente.devedor.nome;
+        document.getElementById('ruaDevedor').value = clienteExistente.devedor.rua;
+        document.getElementById('numeroDevedor').value = clienteExistente.devedor.numero;
+        document.getElementById('bairroDevedor').value = clienteExistente.devedor.bairro;
+        document.getElementById('cidade').value = clienteExistente.devedor.cidade;
+        document.getElementById('cep').value = clienteExistente.devedor.cep || '';
+        document.getElementById('estado').value = clienteExistente.devedor.estado;
+        document.getElementById('municipio').value = clienteExistente.devedor.municipio || '';
+        document.getElementById('clienteExistenteAlert').scrollIntoView({ behavior: 'smooth' });
+    } else {
+        document.getElementById('clienteExistenteAlert').style.display = 'none';
+    }
+}
+
+function converterValorPorExtenso() {
+    const valor = parseFloat(document.getElementById('valor').value) || 0;
+    document.getElementById('valorExtenso').value = numeroPorExtenso(valor).charAt(0).toUpperCase() + numeroPorExtenso(valor).slice(1);
+}
+function atualizarDataFormatada() {
+    const data = document.getElementById('dataEmissao')?.value;
+    if (data) document.getElementById('dataEmissaoFormatada').value = formatarDataExtenso(data);
+}
+function toggleParcelas() {
+    const select = document.getElementById('quantidadeParcelas');
+    const div = document.getElementById('parcelasContainer');
+    if (select && div) { div.style.display = select.value === '1' ? 'none' : 'block'; if (select.value !== '1') gerarCamposParcelas(); }
+}
+function gerarCamposParcelas() {
+    const qtd = parseInt(document.getElementById('quantidadeParcelas').value);
+    const total = parseFloat(document.getElementById('valor').value) || 0;
+    const valorParcela = total / qtd;
+    const data = document.getElementById('dataEmissao').value;
+    const container = document.getElementById('parcelasContainer');
+    if (!container) return;
+    let html = '<h6 class="mt-3 mb-2">📋 Detalhes das Parcelas:</h6><div class="table-responsive"><table class="table table-sm table-bordered"><thead class="table-dark"><th>Nº</th><th>Valor (R$)</th><th>Data Vencimento</th></thead><tbody>';
+    for (let i = 1; i <= qtd; i++) {
+        const venc = calcularVencimentoParcela(data, i);
+        html += `<tr><td class="text-center">${i}ª</td><td class="text-center">R$ ${valorParcela.toFixed(2)}</td><td class="text-center">${formatarDataBR(venc)}</td></tr>`;
+    }
+    html += '</tbody></table></div>';
+    container.innerHTML = html;
+}
+
+document.getElementById('formDuplicata')?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const qtd = parseInt(document.getElementById('quantidadeParcelas').value);
+    const valorTotal = parseFloat(document.getElementById('valor').value);
+    const valorParcela = valorTotal / qtd;
+    const dataEmissao = document.getElementById('dataEmissao').value;
+    const cpf = document.getElementById('cpfDevedor').value.replace(/\D/g, '');
+    const devedorBase = {
+        nome: document.getElementById('nomeDevedor').value, cpf: cpf,
+        estado: document.getElementById('estado').value, rua: document.getElementById('ruaDevedor').value,
+        numero: document.getElementById('numeroDevedor').value, bairro: document.getElementById('bairroDevedor').value,
+        cidade: document.getElementById('cidade').value, cep: document.getElementById('cep').value,
+        municipio: document.getElementById('municipio').value || document.getElementById('cidade').value,
+        endereco: `${document.getElementById('ruaDevedor').value}, Nº ${document.getElementById('numeroDevedor').value} - ${document.getElementById('bairroDevedor').value}`
+    };
+    const idOriginal = Date.now();
+    for (let i = 1; i <= qtd; i++) {
+        const venc = calcularVencimentoParcela(dataEmissao, i);
+        duplicatas.push({
+            id: idOriginal + i, idOriginal: idOriginal, parcela: i, totalParcelas: qtd,
+            credor: configCredor, dataEmissao: dataEmissao, numNF: document.getElementById('numNF').value,
+            valor: valorParcela, valorTotal: valorTotal, numDuplicata: `${document.getElementById('numDuplicata').value || ''}-${i}`,
+            vencimento: venc, devedor: devedorBase,
+            valorExtenso: numeroPorExtenso(valorParcela).charAt(0).toUpperCase() + numeroPorExtenso(valorParcela).slice(1),
+            dataExtenso: document.getElementById('dataEmissaoFormatada').value, 
+            status: 'pendente', repm: '30', dataPagamento: null
+        });
+    }
+    localStorage.setItem('duplicatas', JSON.stringify(duplicatas));
+    alert(`${qtd} parcela(s) salva(s) com sucesso!`);
+    window.location.href = 'clientes.html';
+});
+
+// ===== FUNÇÕES DA TABELA DE CLIENTES =====
+function carregarTabelaClientes() {
+    const tbody = document.getElementById('tabelaClientes');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    if (duplicatas.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="text-center">Nenhum cliente cadastrado</td></tr>'; return; }
+    const clientesMap = new Map();
+    duplicatas.forEach(dup => { const cpf = dup.devedor.cpf; if (!clientesMap.has(cpf)) clientesMap.set(cpf, { devedor: dup.devedor, duplicatas: [] }); clientesMap.get(cpf).duplicatas.push(dup); });
+    let idx = 1;
+    for (const [cpf, cliente] of clientesMap) {
+        const totalValor = cliente.duplicatas.reduce((s, d) => s + parseFloat(d.valor), 0);
+        const pago = cliente.duplicatas.filter(d => d.status === 'pago').length;
+        const aguardando = cliente.duplicatas.filter(d => d.status === 'aguardando_confirmacao').length;
+        const total = cliente.duplicatas.length;
+        const statusText = pago === total ? '✅ Todas pagas' : (aguardando > 0 ? '⏳ Aguardando confirmação' : '⚠️ Pendente');
+        const row = tbody.insertRow();
+        row.innerHTML = `
+            <td class="text-center">${idx}</td><td><strong>${cliente.devedor.nome}</strong></td><td>${formatarCPF(cpf)}</td>
+            <td class="text-center">${total}x</td><td class="text-center">R$ ${totalValor.toFixed(2)}</td>
+            <td class="text-center">${statusText}</td>
+            <td class="text-center">
+                <button class="btn btn-sm btn-info" onclick="verParcelas('${cpf}')"><i class="bi bi-list-ul"></i></button>
+                <button class="btn btn-sm btn-warning" onclick="imprimirDuplicataTotal('${cpf}')"><i class="bi bi-receipt"></i></button>
+                <button class="btn btn-sm btn-primary" onclick="imprimirContratoTotal('${cpf}')"><i class="bi bi-file-text"></i></button>
+                <button class="btn btn-sm btn-danger" onclick="excluirCliente('${cpf}')"><i class="bi bi-trash"></i></button>
+            </td>
+        `;
+        idx++;
+    }
+}
+
+function verParcelas(cpf) {
+    const parcelas = duplicatas.filter(d => d.devedor.cpf === cpf);
+    if (parcelas.length === 0) return;
+    const devedor = parcelas[0].devedor;
+    let modalHTML = `<div class="modal fade" id="modalParcelas" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header bg-warning"><h5 class="modal-title"><i class="bi bi-receipt"></i> Parcelas - ${devedor.nome}</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="table-responsive"><table class="table table-bordered"><thead class="table-dark"><th>Parcela</th><th>Valor</th><th>Vencimento</th><th>Status</th><th>Ações</th></thead><tbody>`;
+    parcelas.sort((a,b) => a.parcela - b.parcela).forEach(dup => {
+        let statusClass = '', statusText = '';
+        if (dup.status === 'pago') { statusClass = 'success'; statusText = 'PAGA'; }
+        else if (dup.status === 'aguardando_confirmacao') { statusClass = 'info'; statusText = 'AGUARDANDO'; }
+        else { statusClass = 'danger'; statusText = 'PENDENTE'; }
+        
+        modalHTML += `<tr><td class="text-center">${dup.parcela}ª / ${dup.totalParcelas}</td><td class="text-center">R$ ${parseFloat(dup.valor).toFixed(2)}</td><td class="text-center">${formatarDataBR(dup.vencimento)}</td>
+            <td class="text-center"><span class="badge bg-${statusClass}">${statusText}</span></td>
+            <td class="text-center">${dup.status !== 'pago' && dup.status !== 'aguardando_confirmacao' ? `<button class="btn btn-sm btn-success" onclick="solicitarPagamentoAdminModal(${dup.id}, '${cpf}')"><i class="bi bi-credit-card"></i> Solicitar Pagamento</button>` : dup.status === 'aguardando_confirmacao' ? '<span class="text-info">Aguardando confirmação</span>' : '<span class="text-success">✓ Paga</span>'}
+            <button class="btn btn-sm btn-warning" onclick="imprimirDuplicata(${dup.id})"><i class="bi bi-printer"></i></button></td></tr>`;
+    });
+    modalHTML += `</tbody></table></div></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button></div></div></div></div>`;
+    const existing = document.getElementById('modalParcelas'); if (existing) existing.remove();
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    const modal = new bootstrap.Modal(document.getElementById('modalParcelas'));
+    modal.show();
+    document.getElementById('modalParcelas').addEventListener('hidden.bs.modal', function() { this.remove(); });
+}
+
+function solicitarPagamentoAdminModal(parcelaId, cpf) {
+    sessionStorage.setItem('parcelaId', parcelaId);
+    sessionStorage.setItem('clienteCpf', cpf);
+    window.location.href = 'pagamento.html';
+}
+
+function excluirCliente(cpf) {
+    if (confirm('Tem certeza que deseja excluir TODAS as parcelas deste cliente?')) {
+        duplicatas = duplicatas.filter(d => d.devedor.cpf !== cpf);
+        localStorage.setItem('duplicatas', JSON.stringify(duplicatas));
+        carregarTabelaClientes(); atualizarEstatisticas();
+        alert('Cliente excluído com sucesso!');
+    }
+}
+
+// ===== FUNÇÕES FRANKSCORE (CLIENTE) =====
+function consultarScore() {
+    const cpf = document.getElementById('cpfConsulta').value.replace(/\D/g, '');
+    if (!cpf || cpf.length < 11) { alert('Digite um CPF válido com 11 números'); return; }
+    const cliente = duplicatas.find(d => d.devedor.cpf === cpf);
+    if (!cliente && !pontuacoes[cpf]) { document.getElementById('erroConsulta').style.display = 'block'; document.getElementById('resultadoScore').style.display = 'none'; return; }
+    document.getElementById('erroConsulta').style.display = 'none';
+    document.getElementById('resultadoScore').style.display = 'block';
+    
+    const nome = cliente ? cliente.devedor.nome : 'Cliente Frank Motos';
+    const primeiroNome = getPrimeiroNome(nome);
+    const pontos = pontuacoes[cpf] ? pontuacoes[cpf].pontos : 0;
+    const nivel = getNivelScore(pontos);
+    const porcentagem = calcularPorcentagemScore(pontos);
+    
+    document.getElementById('saudacaoCliente').innerHTML = `<h4><i class="bi bi-person-circle"></i> Olá, ${primeiroNome}!</h4><p id="cpfCliente">${formatarCPF(cpf)}</p>`;
+    document.getElementById('pontuacaoAtual').innerHTML = pontos;
+    document.getElementById('barraProgresso').style.width = `${porcentagem}%`;
+    document.getElementById('barraProgresso').innerHTML = `${Math.floor(porcentagem)}%`;
+    document.getElementById('nivelCliente').innerHTML = `${nivel.icone} ${nivel.nome}`;
+    document.getElementById('badgeNivel').innerHTML = `<span class="badge-nivel ${nivel.cor}">${nivel.nome}</span>`;
+    document.getElementById('mensagemNivel').innerHTML = nivel.descricao;
+    
+    const parcelasCliente = duplicatas.filter(d => d.devedor.cpf === cpf);
+    const tbodyParcelas = document.getElementById('tabelaParcelasCliente');
+    tbodyParcelas.innerHTML = '';
+    let temPendente = false;
+    if (parcelasCliente.length === 0) { tbodyParcelas.innerHTML = '缘<td colspan="5" class="text-center">Nenhuma parcela encontrada</td>'; }
+    else {
+        parcelasCliente.sort((a,b) => a.parcela - b.parcela).forEach(p => {
+            let statusClass = '', statusText = '';
+            if (p.status === 'pago') { statusClass = 'status-pago'; statusText = 'PAGA'; }
+            else if (p.status === 'aguardando_confirmacao') { statusClass = 'status-aguardando'; statusText = 'AGUARDANDO CONFIRMAÇÃO'; }
+            else { statusClass = 'status-pendente'; statusText = 'PENDENTE'; temPendente = true; }
+            const row = tbodyParcelas.insertRow();
+            row.innerHTML = `
+                <td class="text-center">${p.parcela}ª / ${p.totalParcelas}  \n
+                <td class="text-center">R$ ${parseFloat(p.valor).toFixed(2)}  \n
+                <td class="text-center">${formatarDataBR(p.vencimento)}  \n
+                <td class="text-center"><span class="${statusClass}">${statusText}</span>  \n
+                <td class="text-center">${p.status === 'pendente' ? `<button class="btn btn-sm btn-success" onclick="irParaPagamento('${cpf}', ${p.id})">Pagar</button>` : (p.status === 'aguardando_confirmacao' ? '<span class="text-info">⏳ Aguardando</span>' : '<span class="text-success">✓ Pago</span>')}  \n
+            `;
+        });
+    }
+    document.getElementById('btnPagar').style.display = temPendente ? 'block' : 'none';
+    
+    const tbodyHistorico = document.getElementById('tabelaHistorico');
+    if (tbodyHistorico) {
+        tbodyHistorico.innerHTML = '';
+        const historico = pontuacoes[cpf] ? pontuacoes[cpf].historico : [];
+        historico.forEach(h => {
+            const row = tbodyHistorico.insertRow();
+            const pontosClass = h.pontos > 0 ? 'text-success' : 'text-danger';
+            row.innerHTML = ` <td>${h.data}</td><td class="${pontosClass} fw-bold">${h.pontos > 0 ? '+' + h.pontos : h.pontos}</td><td>${h.motivo}</td>`;
+        });
+        if (historico.length === 0) tbodyHistorico.innerHTML = '缘<td colspan="3" class="text-center">Nenhum histórico disponível</td>';
+    }
+    
+    sessionStorage.setItem('clienteCpf', cpf);
+    
+    // Carregar notificações não lidas
+    const notificacoesNaoLidas = notificacoes.filter(n => n.cpf === cpf && !n.lida);
+    notificacoesNaoLidas.forEach(n => {
+        adicionarNotificacao(cpf, nome, n.titulo, n.mensagem, n.tipo);
+        n.lida = true;
+    });
+    localStorage.setItem('notificacoes', JSON.stringify(notificacoes));
+}
+
+function irParaPagamento(cpf, parcelaId) {
+    if (cpf) { sessionStorage.setItem('clienteCpf', cpf); sessionStorage.setItem('parcelaId', parcelaId); }
+    window.location.href = 'pagamento.html';
+}
+
+function copiarChavePix() {
+    const chave = document.getElementById('chavePixDisplay').innerText;
+    navigator.clipboard.writeText(chave).then(() => alert('✅ Chave PIX copiada!\nCNPJ: ' + chave + '\n\n⚠️ Confirme os dados antes de pagar!'));
+}
+
+function voltar() { window.location.href = 'frankscore.html'; }
+
+// ===== FUNÇÕES ADMIN (PONTOS) =====
+function adicionarPontosAdmin(pontos, motivo) {
+    const select = document.getElementById('selectClienteScore');
+    const cpf = select.value;
+    if (!cpf) { alert('Selecione um cliente primeiro!'); return; }
+    const novosPontos = adicionarPontos(cpf, pontos, motivo);
+    const cliente = duplicatas.find(d => d.devedor.cpf === cpf);
+    adicionarNotificacao(cpf, cliente?.devedor.nome || 'Cliente', 'Pontos Adicionados!', 
+        `Você ganhou +${pontos} pontos! Motivo: ${motivo}. Seu score agora é ${novosPontos} pontos.`, 'success');
+    alert(`✅ +${pontos} pontos adicionados! Cliente notificado.`);
+    carregarSelectClientes();
+    atualizarExibicaoScore(cpf);
+}
+
+function removerPontosAdmin(pontos, motivo) {
+    const select = document.getElementById('selectClienteScore');
+    const cpf = select.value;
+    if (!cpf) { alert('Selecione um cliente primeiro!'); return; }
+    const novosPontos = removerPontos(cpf, pontos, motivo);
+    const cliente = duplicatas.find(d => d.devedor.cpf === cpf);
+    adicionarNotificacao(cpf, cliente?.devedor.nome || 'Cliente', 'Pontos Removidos', 
+        `Foram removidos ${pontos} pontos. Motivo: ${motivo}. Seu score agora é ${novosPontos} pontos.`, 'danger');
+    alert(`⚠️ -${pontos} pontos removidos! Cliente notificado.`);
+    carregarSelectClientes();
+    atualizarExibicaoScore(cpf);
+}
+
+function aplicarDescontoGoogle(percentual) {
+    const select = document.getElementById('selectClienteScore');
+    const cpf = select.value;
+    if (!cpf) { alert('Selecione um cliente primeiro!'); return; }
+    const novosPontos = adicionarPontos(cpf, 20, 'Avaliação no Google');
+    const cliente = duplicatas.find(d => d.devedor.cpf === cpf);
+    adicionarNotificacao(cpf, cliente?.devedor.nome || 'Cliente', 'Avaliação no Google!', 
+        `Você avaliou a Frank Motos no Google! Ganhou +20 pontos e ${percentual}% de desconto na próxima compra!`, 'success');
+    alert(`🎉 Cliente ganhou +20 pontos e ${percentual}% de desconto!`);
+    carregarSelectClientes();
+}
+
+function carregarSelectClientes() {
+    const select = document.getElementById('selectClienteScore');
+    if (!select) return;
+    select.innerHTML = '<option value="">Selecione um cliente</option>';
+    const clientesMap = new Map();
+    duplicatas.forEach(dup => { const cpf = dup.devedor.cpf; if (!clientesMap.has(cpf)) clientesMap.set(cpf, { nome: dup.devedor.nome, cpf: cpf }); });
+    for (const [cpf, cliente] of clientesMap) {
+        const pontos = pontuacoes[cpf] ? pontuacoes[cpf].pontos : 0;
+        select.innerHTML += `<option value="${cpf}">${cliente.nome} - ${formatarCPF(cpf)} (${pontos} pts)</option>`;
+    }
+    select.addEventListener('change', function() { if (this.value) atualizarExibicaoScore(this.value); });
+}
+
+function atualizarExibicaoScore(cpf) {
+    const pontuacaoSpan = document.getElementById('pontuacaoAtualAdmin');
+    const barra = document.getElementById('barraProgressoAdmin');
+    const nivelSpan = document.getElementById('nivelAdmin');
+    if (pontuacaoSpan && barra && nivelSpan) {
+        const pontos = pontuacoes[cpf] ? pontuacoes[cpf].pontos : 0;
+        const nivel = getNivelScore(pontos);
+        const porcentagem = calcularPorcentagemScore(pontos);
+        pontuacaoSpan.innerText = pontos;
+        barra.style.width = `${porcentagem}%`;
+        barra.innerHTML = `${Math.floor(porcentagem)}%`;
+        nivelSpan.innerHTML = `${nivel.icone} ${nivel.nome}`;
+    }
+}
+
+// ===== FUNÇÕES DE IMPRESSÃO =====
+function imprimirDuplicataTotal(cpf) {
+    const parcelas = duplicatas.filter(d => d.devedor.cpf === cpf);
+    if (parcelas.length === 0) return;
+    const dup = parcelas[0];
+    const valorTotal = dup.valorTotal;
+    const dataEmissao = formatarDataBR(dup.dataEmissao);
+    let tabelaParcelas = '';
+    parcelas.sort((a,b) => a.parcela - b.parcela).forEach(p => { tabelaParcelas += `汽<td class="text-center">${p.parcela}ª</td><td class="text-center">R$ ${parseFloat(p.valor).toFixed(2)}</td><td class="text-center">${formatarDataBR(p.vencimento)}</td> </tr>`; });
+    const janela = window.open('', '_blank');
+    janela.document.write(`<html><head><title>Duplicata Total</title><style>@page{size:A4;margin:1.5cm}body{font-family:monospace}.container{max-width:800px;margin:auto}.titulo{text-align:center;font-size:28px}.info-credor{border:1px solid #000;padding:10px}.tabela{width:100%;border-collapse:collapse}.tabela th,.tabela td{border:1px solid #000;padding:8px;text-align:center}.multa{background:#fff3cd;text-align:center;padding:8px;border:1px solid #000}.sacado{border:1px solid #000;padding:10px}.assinatura-dupla{display:flex;justify-content:space-between;margin-top:40px}.assinatura-item{flex:1;text-align:center}.linha{border-bottom:1px solid #000;margin:5px 0}</style></head>
+    <body><div class="container"><div class="titulo">Duplicata de Venda Mercantil</div><div class="subtitulo">VALOR TOTAL: R$ ${parseFloat(valorTotal).toFixed(2)}</div>
+    <div class="info-credor"><div><strong>${configCredor.nome} - ${configCredor.fantasia}</strong></div><div>${configCredor.endereco} - ${configCredor.bairro} | ${configCredor.cidade} - ${configCredor.uf}</div><div>C.N.P.J (MF) Nº ${configCredor.cnpj} | C.C.M Nº ${configCredor.ccm}</div><div>Mun. ${configCredor.cidade} - ${configCredor.uf} | DATA DA EMISSÃO: ${dataEmissao}</div></div>
+    <table class="tabela"><tr><th>NF FATURA N°</th><th>VALOR TOTAL</th><th>PARCELAS</th><th>Vencimento da 1ª</th></tr><tr><td>${dup.numNF || '______'}</td><td>R$ ${parseFloat(valorTotal).toFixed(2)}</td><td>${dup.totalParcelas}x de R$ ${parseFloat(dup.valor).toFixed(2)}</td><td>${formatarDataBR(dup.vencimento)}</td></tr></table>
+    <div class="subtitulo">📋 DETALHES DAS PARCELAS:</div><table class="tabela"><thead><tr><th>Parcela</th><th>Valor (R$)</th><th>Data de Vencimento</th></tr></thead><tbody>${tabelaParcelas}</tbody></table>
+    <div class="multa">⚠️ APÓS O VENCIMENTO: MULTA DE 2% + MORA DIÁRIA DE R$ 2,14 ⚠️</div>
+    <div class="sacado"><div><strong>NOME DO SACADO:</strong> ${dup.devedor.nome.toUpperCase()}</div><div><strong>ENDEREÇO:</strong> ${dup.devedor.rua.toUpperCase()}, Nº ${dup.devedor.numero} - ${dup.devedor.bairro.toUpperCase()}</div><div><strong>CEP:</strong> ${dup.devedor.cep || '______'} | <strong>MUNICÍPIO:</strong> ${dup.devedor.cidade.toUpperCase()}</div><div><strong>PRAÇA DE PAGAMENTO:</strong> ${dup.devedor.cidade.toUpperCase()} | <strong>CNPJ/CPF:</strong> ${formatarCPF(dup.devedor.cpf)}</div><div><strong>Insc. Est.:</strong> ISENTO</div></div>
+    <div style="border:1px solid #000; padding:5px;">REP.M: 30</div>
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); margin-top:20px;"><div>VALOR POR EXTENSO<br>${numeroPorExtenso(valorTotal).toUpperCase()}</div><div>DEVEDOR<br>${dup.devedor.nome.toUpperCase()}</div><div>PRAÇA DE PAGAMENTO<br>${dup.devedor.cidade.toUpperCase()}</div></div>
+    <div class="assinatura-dupla"><div class="assinatura-item"><div>_____/____/________</div><div>(DATA DE ACEITE)</div></div><div class="assinatura-item"><div class="linha"></div><div>ASSINATURA DO SACADO</div></div></div>
+    <div class="no-print" style="margin-top:20px;"><button onclick="window.print()">Imprimir</button> <button onclick="window.close()">Fechar</button></div></div></body></html>`);
+    janela.document.close();
+}
+
+function imprimirContratoTotal(cpf) {
+    const parcelas = duplicatas.filter(d => d.devedor.cpf === cpf);
+    if (parcelas.length === 0) return;
+    const dup = parcelas[0];
+    const valorTotal = dup.valorTotal;
+    const totalParcelas = dup.totalParcelas;
+    const dataAtual = new Date();
+    const dataExtenso = `${dataAtual.getDate()} de ${['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'][dataAtual.getMonth()]} de ${dataAtual.getFullYear()}`;
+    let tabelaParcelas = '';
+    parcelas.sort((a,b) => a.parcela - b.parcela).forEach(p => { tabelaParcelas += `汽<td style="border:1px solid #000;padding:5px;">${p.parcela}ª</td><td style="border:1px solid #000;padding:5px;">R$ ${parseFloat(p.valor).toFixed(2)}</td><td style="border:1px solid #000;padding:5px;">${formatarDataBR(p.vencimento)}</td> </tr>`; });
+    const janela = window.open('', '_blank');
+    janela.document.write(`<html><head><title>Contrato</title><style>@page{size:A4;margin:2cm}body{font-family:'Times New Roman',serif;font-size:12pt}h1,h2{text-align:center}.contrato-numero{text-align:right}.clausula{margin-bottom:15px;text-align:justify}.clausula-titulo{font-weight:bold}.multa-destaque{border:2px solid #000;padding:10px;text-align:center}.parcelas-info{border:1px solid #000;padding:10px;margin:20px 0}.assinaturas{display:flex;justify-content:space-between;margin-top:40px}.assinatura{text-align:center;width:45%}.linha{border-bottom:1px solid #000;margin:10px 0;height:30px}.data-local{text-align:right}.info-adicional{margin:20px 0;padding:10px;background:#f5f5f5}</style></head>
+    <body><div class="contrato-numero">CONTRATO Nº ${dup.numNF || dup.id.toString().slice(-6)}</div>
+    <h1>CONTRATO DE PRESTAÇÃO DE SERVIÇOS MECÂNICOS</h1><h2>FRANK MOTOS - OFICINA ESPECIALIZADA EM MOTOCICLETAS</h2>
+    <div><p><strong>CONTRATANTE:</strong> ${dup.devedor.nome}, CPF ${formatarCPF(dup.devedor.cpf)}, ${dup.devedor.rua}, nº ${dup.devedor.numero}, ${dup.devedor.bairro}, ${dup.devedor.cidade} - ${dup.devedor.estado}, CEP ${dup.devedor.cep || '______'}.</p><p><strong>CONTRATADA:</strong> FRANKELLEY STEFANO ALVES AZEVEDO ME, CNPJ ${configCredor.cnpj}, ${configCredor.endereco}, ${configCredor.bairro}, ${configCredor.cidade} - ${configCredor.uf}, CEP ${configCredor.cep}.</p></div>
+    <div class="clausula"><div class="clausula-titulo">CLÁUSULA PRIMEIRA - DO OBJETO</div><p>Prestação de serviços de oficina mecânica em motocicletas, conforme Nota Fiscal nº ${dup.numNF}, emitida em ${formatarDataBR(dup.dataEmissao)}.</p></div>
+    <div class="clausula"><div class="clausula-titulo">CLÁUSULA SEGUNDA - DO VALOR E FORMA DE PAGAMENTO</div><p>Valor total: R$ ${parseFloat(valorTotal).toFixed(2)} (${numeroPorExtenso(valorTotal)}), pago em ${totalParcelas}x de R$ ${parseFloat(dup.valor).toFixed(2)}.</p></div>
+    <div class="parcelas-info"><table style="width:100%;border-collapse:collapse;"><thead><tr><th style="border:1px solid #000;">Parcela</th><th style="border:1px solid #000;">Valor</th><th style="border:1px solid #000;">Vencimento</th></tr></thead><tbody>${tabelaParcelas}</tbody></table><p>Data da primeira parcela: ${formatarDataBR(dup.vencimento)}</p></div>
+    <div class="clausula"><div class="clausula-titulo">CLÁUSULA TERCEIRA - DA MORA</div><p>a) MULTA DE 2% sobre o valor; b) JUROS DE 1% AO MÊS; c) CORREÇÃO MONETÁRIA.</p></div>
+    <div class="multa-destaque">⚠️ APÓS O VENCIMENTO: MULTA DE 2% + JUROS DE 1% AO MÊS ⚠️</div>
+    <div class="clausula"><div class="clausula-titulo">CLÁUSULA QUARTA - DA GARANTIA</div><p>Garantia de 90 dias contra defeitos de fabricação ou erro na execução do serviço.</p></div>
+    <div class="clausula"><div class="clausula-titulo">CLÁUSULA QUINTA - DO FORO</div><p>Foro da comarca de ${configCredor.cidade} - ${configCredor.uf}.</p></div>
+    <div class="info-adicional"><p>• As peças substituídas ficarão à disposição por 30 dias; • O veículo será entregue mediante comprovante de pagamento.</p></div>
+    <div class="data-local"><p>${configCredor.cidade} - ${configCredor.uf}, ${dataExtenso}.</p></div>
+    <div class="assinaturas"><div class="assinatura"><div class="linha"></div><p><strong>CONTRATANTE</strong><br>${dup.devedor.nome}</p></div><div class="assinatura"><div class="linha"></div><p><strong>CONTRATADA</strong><br>FRANK MOTOS<br>${configCredor.nome}</p></div></div>
+    <div class="no-print" style="margin-top:20px;"><button onclick="window.print()">Imprimir</button> <button onclick="window.close()">Fechar</button></div></body></html>`);
+    janela.document.close();
+}
+
+function imprimirDuplicata(id) {
+    const dup = duplicatas.find(d => d.id === id);
+    if (!dup) return;
+    const janela = window.open('', '_blank');
+    janela.document.write(`<html><head><title>Duplicata</title><style>@page{size:A4;margin:1.5cm}body{font-family:monospace}.container{max-width:800px;margin:auto}.titulo{text-align:center;font-size:28px}.info-credor{border:1px solid #000;padding:10px}.tabela{width:100%;border-collapse:collapse}.tabela th,.tabela td{border:1px solid #000;padding:8px}.multa{background:#fff3cd;text-align:center;padding:8px}.sacado{border:1px solid #000;padding:10px}.assinatura-dupla{display:flex;justify-content:space-between;margin-top:40px}.assinatura-item{flex:1;text-align:center}.linha{border-bottom:1px solid #000;margin:5px 0}</style></head>
+    <body><div class="container"><div class="titulo">Duplicata</div><div class="info-parcela">📄 ${dup.parcela}ª PARCELA de ${dup.totalParcelas} 📄</div>
+    <div class="info-credor"><div><strong>${configCredor.nome} - ${configCredor.fantasia}</strong></div><div>${configCredor.endereco} - ${configCredor.bairro} | ${configCredor.cidade} - ${configCredor.uf}</div>
+    <div>C.N.P.J (MF) Nº ${configCredor.cnpj} | C.C.M Nº ${configCredor.ccm}</div><div>Mun. ${configCredor.cidade} - ${configCredor.uf} | DATA DA EMISSÃO: ${formatarDataBR(dup.dataEmissao)}</div></div>
+    <table class="tabela"><tr><th>NF FATURA N°</th><th>Valor</th><th>Duplicação</th><th>Vencimento</th></tr><tr><td>${dup.numNF || '______'}</td><td>R$ ${parseFloat(dup.valor).toFixed(2)}</td><td>${dup.numDuplicata || `${dup.parcela}/${dup.totalParcelas}`}</td><td>${formatarDataBR(dup.vencimento)}</td></tr></table>
+    <div class="multa">⚠️ APÓS O VENCIMENTO: MULTA DE 2% + MORA DIÁRIA DE R$ 2,14 ⚠️</div>
+    <div class="sacado"><div><strong>NOME DO SACADO:</strong> ${dup.devedor.nome.toUpperCase()}</div><div><strong>ENDEREÇO:</strong> ${dup.devedor.rua.toUpperCase()}, Nº ${dup.devedor.numero} - ${dup.devedor.bairro.toUpperCase()}</div>
+    <div><strong>CEP:</strong> ${dup.devedor.cep || '______'} | <strong>MUNICÍPIO:</strong> ${dup.devedor.cidade.toUpperCase()}</div>
+    <div><strong>PRAÇA DE PAGAMENTO:</strong> ${dup.devedor.cidade.toUpperCase()} | <strong>CNPJ/CPF:</strong> ${formatarCPF(dup.devedor.cpf)}</div><div><strong>Insc. Est.:</strong> ISENTO</div></div>
+    <div class="repm">REP.M: 30</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);margin-top:20px;"><div>VALOR POR EXTENSO<br>${dup.valorExtenso.toUpperCase()}</div><div>DEVEDOR<br>${dup.devedor.nome.toUpperCase()}</div><div>PRAÇA DE PAGAMENTO<br>${dup.devedor.cidade.toUpperCase()}</div></div>
+    <div class="assinatura-dupla"><div class="assinatura-item"><div>_____/____/________</div><div>(DATA DE ACEITE)</div></div><div class="assinatura-item"><div class="linha"></div><div>ASSINATURA DO SACADO</div></div></div>
+    <div class="no-print" style="margin-top:20px;"><button onclick="window.print()">Imprimir</button> <button onclick="window.close()">Fechar</button></div></div></body></html>`);
+    janela.document.close();
+}
+
+function carregarChecklistClientes() {
+    const tbody = document.getElementById('tabelaChecklist');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    const clientesMap = new Map();
+    duplicatas.forEach(dup => { const cpf = dup.devedor.cpf; if (!clientesMap.has(cpf)) clientesMap.set(cpf, { devedor: dup.devedor, duplicatas: [], dataCadastro: dup.dataEmissao, valorTotal: 0 }); const c = clientesMap.get(cpf); c.duplicatas.push(dup); c.valorTotal += parseFloat(dup.valor); });
+    let idx = 1;
+    for (const [cpf, cliente] of clientesMap) {
+        const pontos = pontuacoes[cpf] ? pontuacoes[cpf].pontos : 0;
+        const nivel = getNivelScore(pontos);
+        const totalServicos = cliente.duplicatas.length;
+        const statusGeral = cliente.duplicatas.every(d => d.status === 'pago') ? '✅ Regular' : '⚠️ Pendente';
+        const row = tbody.insertRow();
+        row.innerHTML = `<td class="text-center">${idx}</td><td><strong>${cliente.devedor.nome}</strong></td><td>${formatarCPF(cpf)}</td><td class="text-center">${pontos}</td><td class="text-center"><span class="badge ${nivel.cor.replace('nivel-', 'bg-')}">${nivel.nome}</span></td><td class="text-center">${formatarDataBR(cliente.dataCadastro)}</td><td class="text-center">${totalServicos}</td><td class="text-center">R$ ${cliente.valorTotal.toFixed(2)}</td><td class="${cliente.duplicatas.every(d => d.status === 'pago') ? 'text-success' : 'text-danger'}">${statusGeral}</td>`;
+        idx++;
+    }
+}
+
+// ===== FUNÇÕES DE BACKUP =====
+function escapeXML(t) { if (!t) return ''; return t.toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;'); }
+function getXMLValue(p, t) { const e = p.getElementsByTagName(t)[0]; return e ? e.textContent : ''; }
+function exportarXML() {
+    try {
+        let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<frank_motos_backup>\n  <data_backup>' + new Date().toLocaleString('pt-BR') + '</data_backup>\n  <versao>3.0</versao>\n  <credor>\n';
+        for (let k of ['nome','fantasia','cnpj','ie','ccm','contato','endereco','bairro','cidade','uf','cep']) xml += `    <${k}>${escapeXML(configCredor[k])}</${k}>\n`;
+        xml += '  </credor>\n  <duplicatas>\n';
+        duplicatas.forEach((d,i) => { xml += `    <duplicata id="${d.id}">\n      <indice>${i+1}</indice>\n      <id_original>${d.idOriginal||d.id}</id_original>\n      <parcela>${d.parcela||1}</parcela>\n      <total_parcelas>${d.totalParcelas||1}</total_parcelas>\n      <data_emissao>${d.dataEmissao}</data_emissao>\n      <num_nf>${escapeXML(d.numNF||'')}</num_nf>\n      <valor>${d.valor}</valor>\n      <valor_total>${d.valorTotal||d.valor}</valor_total>\n      <num_duplicata>${escapeXML(d.numDuplicata||'')}</num_duplicata>\n      <vencimento>${d.vencimento}</vencimento>\n      <status>${d.status}</status>\n      <valor_extenso>${escapeXML(d.valorExtenso||'')}</valor_extenso>\n      <data_pagamento>${d.dataPagamento||''}</data_pagamento>\n      <repm>${d.repm||'30'}</repm>\n      <devedor>\n`;
+        for (let k of ['nome','cpf','estado','rua','numero','bairro','cidade','cep','municipio']) xml += `        <${k}>${escapeXML(d.devedor[k]||'')}</${k}>\n`;
+        xml += '      </devedor>\n    </duplicata>\n'; });
+        xml += '  </duplicatas>\n  <pontuacoes>\n';
+        for (let [cpf, data] of Object.entries(pontuacoes)) { xml += `    <cliente cpf="${cpf}"><pontos>${data.pontos}</pontos><historico>\n`; if(data.historico) data.historico.forEach(h=>{ xml += `      <item><data>${h.data}</data><pontos>${h.pontos}</pontos><motivo>${escapeXML(h.motivo)}</motivo></item>\n`; }); xml += `    </historico></cliente>\n`; }
+        xml += '  </pontuacoes>\n  <solicitacoes>\n';
+        solicitacoesPagamento.forEach(s=>{ xml += `    <solicitacao id="${s.id}"><parcela_id>${s.parcelaId}</parcela_id><cpf>${s.cpf}</cpf><status>${s.status}</status><data>${s.dataSolicitacao}</data></solicitacao>\n`; });
+        xml += '  </solicitacoes>\n</frank_motos_backup>';
+        const blob = new Blob([xml], {type:'application/xml'}), url=URL.createObjectURL(blob), a=document.createElement('a');
+        a.href=url; a.download=`frank_motos_backup_${new Date().toISOString().slice(0,10)}.xml`; a.click(); alert('Backup exportado!');
+    } catch(e) { alert('Erro: '+e.message); }
+}
+function importarXML() {
+    const input=document.createElement('input'); input.type='file'; input.accept='.xml';
+    input.onchange=e=>{const file=e.target.files[0], reader=new FileReader();
+    reader.onload=ev=>{try{
+        const xml=new DOMParser().parseFromString(ev.target.result,'text/xml'), root=xml.documentElement;
+        if(root.nodeName!=='frank_motos_backup') throw new Error('Arquivo inválido');
+        const credorNode=xml.getElementsByTagName('credor')[0];
+        if(credorNode) for(let k of ['nome','fantasia','cnpj','ie','ccm','contato','endereco','bairro','cidade','uf','cep']) configCredor[k]=getXMLValue(credorNode,k)||configCredor[k];
+        const novas=[], nodes=xml.getElementsByTagName('duplicata');
+        for(let i=0;i<nodes.length;i++){ const dup=nodes[i], dev=dup.getElementsByTagName('devedor')[0];
+            if(dev){ const d={id:parseInt(dup.getAttribute('id'))||Date.now()+i, idOriginal:parseInt(getXMLValue(dup,'id_original'))||Date.now(), parcela:parseInt(getXMLValue(dup,'parcela'))||1, totalParcelas:parseInt(getXMLValue(dup,'total_parcelas'))||1, dataEmissao:getXMLValue(dup,'data_emissao')||'', numNF:getXMLValue(dup,'num_nf')||'', valor:parseFloat(getXMLValue(dup,'valor'))||0, valorTotal:parseFloat(getXMLValue(dup,'valor_total'))||0, numDuplicata:getXMLValue(dup,'num_duplicata')||'', vencimento:getXMLValue(dup,'vencimento')||'', status:getXMLValue(dup,'status')||'pendente', valorExtenso:getXMLValue(dup,'valor_extenso')||'', dataPagamento:getXMLValue(dup,'data_pagamento')||null, repm:getXMLValue(dup,'repm')||'30', devedor:{}};
+                for(let k of ['nome','cpf','estado','rua','numero','bairro','cidade','cep','municipio']) d.devedor[k]=getXMLValue(dev,k)||'';
+                d.devedor.endereco=`${d.devedor.rua}, Nº ${d.devedor.numero} - ${d.devedor.bairro}`;
+                if(!d.valorExtenso&&d.valor) d.valorExtenso=numeroPorExtenso(d.valor).charAt(0).toUpperCase()+numeroPorExtenso(d.valor).slice(1);
+                if(d.dataEmissao) d.dataExtenso=formatarDataExtenso(d.dataEmissao);
+                d.credor=configCredor; novas.push(d);
+            }
+        }
+        if(novas.length){ duplicatas=novas; localStorage.setItem('duplicatas',JSON.stringify(duplicatas)); }
+        const pontosNodes=xml.getElementsByTagName('cliente');
+        const novasPontuacoes = {};
+        for(let i=0;i<pontosNodes.length;i++){ const c=pontosNodes[i]; const cpf=c.getAttribute('cpf'); if(cpf){ const pontos=parseInt(getXMLValue(c,'pontos'))||0; const historico=[]; const itens=c.getElementsByTagName('item'); for(let j=0;j<itens.length;j++){ historico.push({data:getXMLValue(itens[j],'data'),pontos:parseInt(getXMLValue(itens[j],'pontos')),motivo:getXMLValue(itens[j],'motivo'),totalAtual:0}); } novasPontuacoes[cpf]={pontos:pontos,historico:historico}; } }
+        pontuacoes = novasPontuacoes;
+        const solicitacoesNodes=xml.getElementsByTagName('solicitacao');
+        const novasSolicitacoes = [];
+        for(let i=0;i<solicitacoesNodes.length;i++){ const s=solicitacoesNodes[i]; novasSolicitacoes.push({id:parseInt(getXMLValue(s,'id')),parcelaId:parseInt(getXMLValue(s,'parcela_id')),cpf:getXMLValue(s,'cpf'),status:getXMLValue(s,'status'),dataSolicitacao:getXMLValue(s,'data')}); }
+        solicitacoesPagamento = novasSolicitacoes;
+        localStorage.setItem('duplicatas',JSON.stringify(duplicatas));
+        localStorage.setItem('configCredor',JSON.stringify(configCredor));
+        localStorage.setItem('pontuacoes',JSON.stringify(pontuacoes));
+        localStorage.setItem('solicitacoesPagamento',JSON.stringify(solicitacoesPagamento));
+        carregarTabelaClientes(); atualizarEstatisticas(); carregarConfigAdmin(); carregarSelectClientes(); carregarSolicitacoesAdmin();
+        alert(`Importado! ${novas.length} parcelas.`);
+    }catch(e){ alert('Erro: '+e.message); }}; reader.readAsText(file);}; input.click();
+}
+function exportarDados(){ exportarXML(); }
+function importarDados(){ importarXML(); }
+function atualizarEstatisticas(){
+    const t=document.getElementById('totalDuplicatas'), p=document.getElementById('totalPagas'), pe=document.getElementById('totalPendentes'), a=document.getElementById('totalAguardando'), v=document.getElementById('valorTotal');
+    if(t){ t.textContent=duplicatas.length; p.textContent=duplicatas.filter(d=>d.status==='pago').length; pe.textContent=duplicatas.filter(d=>d.status==='pendente').length; 
+        if(a) a.textContent=duplicatas.filter(d=>d.status==='aguardando_confirmacao').length;
+        v.textContent=`R$ ${duplicatas.reduce((a,d)=>a+parseFloat(d.valor),0).toFixed(2)}`; }
+}
+function limparTodosDados(){
+    if(confirm('ATENÇÃO! Apagar TODOS os dados?')){ localStorage.clear(); duplicatas=[]; pontuacoes={}; solicitacoesPagamento=[]; notificacoes=[]; configCredor={nome:"FRANKELLEY STEFANO ALVES AZEVEDO",fantasia:"FRANK MOTOS",cnpj:"33.917.740/0001-46",ie:"0000001109367",ccm:"11.222-3",contato:"(69) 98494-0207",endereco:"AV: MIGUEL VIEIRA FERREIRA, 5454",bairro:"Cidade Alta",cidade:"ROLIM DE MOURA",uf:"RO",cep:"76940-000"}; carregarTabelaClientes(); atualizarEstatisticas(); carregarConfigAdmin(); alert('Dados removidos!'); }
+}
+function carregarConfigAdmin(){
+    const n=document.getElementById('configNomeCredor'); if(n){
+        document.getElementById('configNomeCredor').value=configCredor.nome; document.getElementById('configFantasia').value=configCredor.fantasia||'';
+        document.getElementById('configCnpj').value=configCredor.cnpj; document.getElementById('configIE').value=configCredor.ie;
+        document.getElementById('configCCM').value=configCredor.ccm||'11.222-3'; document.getElementById('configContato').value=configCredor.contato;
+        document.getElementById('configEndereco').value=configCredor.endereco; document.getElementById('configBairro').value=configCredor.bairro;
+        document.getElementById('configCidade').value=configCredor.cidade; document.getElementById('configUF').value=configCredor.uf;
+        document.getElementById('configCep').value=configCredor.cep;
+    }
+}
+document.getElementById('formConfigCredor')?.addEventListener('submit',function(e){ e.preventDefault();
+    configCredor={nome:document.getElementById('configNomeCredor').value, fantasia:document.getElementById('configFantasia').value, cnpj:document.getElementById('configCnpj').value, ie:document.getElementById('configIE').value, ccm:document.getElementById('configCCM').value, contato:document.getElementById('configContato').value, endereco:document.getElementById('configEndereco').value, bairro:document.getElementById('configBairro').value, cidade:document.getElementById('configCidade').value, uf:document.getElementById('configUF').value, cep:document.getElementById('configCep').value};
+    localStorage.setItem('configCredor',JSON.stringify(configCredor)); alert('Configurações salvas!');
+});
+function adicionarCreditosDesenvolvedor(){
+    let f=document.querySelector('footer'); if(!f){ f=document.createElement('footer'); f.className='footer mt-5'; document.body.appendChild(f); }
+    f.innerHTML='<div class="container text-center"><hr><p class="text-muted"><i class="bi bi-code-slash"></i> Este site foi desenvolvido por <strong>SIPRIANO WEB</strong> em parceria com <strong>FRANK MOTOS</strong></p></div>';
+}
+function topFunction(){ document.body.scrollTop=0; document.documentElement.scrollTop=0; }
+document.addEventListener('DOMContentLoaded',function(){
+    carregarTabelaClientes(); atualizarEstatisticas(); carregarConfigAdmin(); carregarSelectClientes(); carregarSolicitacoesAdmin();
+    if(window.location.pathname.includes('clientes_checklist.html')) carregarChecklistClientes();
+    if(window.location.pathname.includes('frankscore.html')){ const nav=document.querySelector('nav'); if(nav) nav.style.display='none'; }
+    const data=document.getElementById('dataEmissao'); if(data){ const hoje=new Date().toISOString().slice(0,10); data.value=hoje; data.addEventListener('change',atualizarDataFormatada); atualizarDataFormatada(); }
+    const sel=document.getElementById('quantidadeParcelas'); if(sel){ sel.addEventListener('change',toggleParcelas); toggleParcelas(); }
+    const val=document.getElementById('valor'); if(val){ val.addEventListener('input',function(){ converterValorPorExtenso(); if(sel&&sel.value!=='1') gerarCamposParcelas(); }); }
+    const btn=document.getElementById('btnTopo'); if(btn){ window.onscroll=function(){ btn.style.display=document.body.scrollTop>20||document.documentElement.scrollTop>20?'block':'none'; }; }
+    adicionarCreditosDesenvolvedor();
+});

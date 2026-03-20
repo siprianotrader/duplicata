@@ -1,0 +1,12 @@
+frank-motos/
+│
+├── index.html
+├── formulario.html
+├── clientes.html
+├── admin.html
+│
+├── css/
+│   └── style.css
+│
+└── js/
+    └── script.js
