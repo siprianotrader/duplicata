@@ -7,7 +7,7 @@ let notificacoes = JSON.parse(localStorage.getItem('notificacoes')) || [];
 let configCredor = JSON.parse(localStorage.getItem('configCredor')) || {
     nome: "FRANKELLEY STEFANO ALVES AZEVEDO", fantasia: "FRANK MOTOS", cnpj: "33.917.740/0001-46",
     ie: "0000001109367", ccm: "11.222-3", contato: "(69) 98494-0207",
-    endereco: "AV: MIGUEL VIEIRA FERREIRA, 5454", bairro: "Cidade Alta",
+    endereco: "Av Dr Miguel Vieira Ferreira, 5454", bairro: "Cidade Alta",
     cidade: "ROLIM DE MOURA", uf: "RO", cep: "76940-000"
 };
 
@@ -87,7 +87,6 @@ function adicionarNotificacao(clienteCpf, clienteNome, titulo, mensagem, tipo) {
     notificacoes.push(notificacao);
     localStorage.setItem('notificacoes', JSON.stringify(notificacoes));
     
-    // Exibir notificação na tela se estiver na página do cliente
     if (window.location.pathname.includes('frankscore.html')) {
         const notifArea = document.getElementById('notificacaoArea');
         if (notifArea) {
@@ -189,7 +188,7 @@ function carregarSolicitacoesAdmin() {
     }
     
     if (solicitacoesPagamento.length === 0) {
-        tbody.innerHTML = '缘<td colspan="6" class="text-center text-muted">📭 Nenhuma solicitação de pagamento encontrada</td> </tr>';
+        tbody.innerHTML = '缘<td colspan="6" class="text-center text-muted">📭 Nenhuma solicitação de pagamento encontrada</td></tr>';
         return;
     }
     
@@ -229,7 +228,7 @@ function carregarSolicitacoesAdmin() {
         }
         
         row.innerHTML = `
-            <td class="text-center align-middle"><strong>${sol.clienteNome}</strong> </td>
+            <td class="text-center align-middle"><strong>${sol.clienteNome}</strong></td>
             <td class="text-center align-middle">${sol.parcela}ª / ${sol.totalParcelas}</td>
             <td class="text-center align-middle"><strong class="text-success">R$ ${parseFloat(sol.valor).toFixed(2)}</strong></td>
             <td class="text-center align-middle">${sol.dataSolicitacao}</td>
@@ -344,6 +343,14 @@ document.getElementById('formDuplicata')?.addEventListener('submit', function(e)
     const valorParcela = valorTotal / qtd;
     const dataEmissao = document.getElementById('dataEmissao').value;
     const cpf = document.getElementById('cpfDevedor').value.replace(/\D/g, '');
+    
+    // VALIDAÇÃO DE DATA
+    const primeiraDataVencimento = calcularVencimentoParcela(dataEmissao, 1);
+    if (primeiraDataVencimento < dataEmissao) {
+        alert('⚠️ ATENÇÃO: A data de vencimento da primeira parcela é anterior à data de emissão!\n\nIsso impede o protesto da duplicata. Corrija as datas antes de salvar.');
+        return;
+    }
+    
     const devedorBase = {
         nome: document.getElementById('nomeDevedor').value, cpf: cpf,
         estado: document.getElementById('estado').value, rua: document.getElementById('ruaDevedor').value,
@@ -387,8 +394,11 @@ function carregarTabelaClientes() {
         const statusText = pago === total ? '✅ Todas pagas' : (aguardando > 0 ? '⏳ Aguardando confirmação' : '⚠️ Pendente');
         const row = tbody.insertRow();
         row.innerHTML = `
-            <td class="text-center">${idx}</td><td><strong>${cliente.devedor.nome}</strong></td><td>${formatarCPF(cpf)}</td>
-            <td class="text-center">${total}x</td><td class="text-center">R$ ${totalValor.toFixed(2)}</td>
+            <td class="text-center">${idx}</td>
+            <td><strong>${cliente.devedor.nome}</strong></td>
+            <td>${formatarCPF(cpf)}</td>
+            <td class="text-center">${total}x</td>
+            <td class="text-center">R$ ${totalValor.toFixed(2)}</td>
             <td class="text-center">${statusText}</td>
             <td class="text-center">
                 <button class="btn btn-sm btn-info" onclick="verParcelas('${cpf}')"><i class="bi bi-list-ul"></i></button>
@@ -467,7 +477,7 @@ function consultarScore() {
     const tbodyParcelas = document.getElementById('tabelaParcelasCliente');
     tbodyParcelas.innerHTML = '';
     let temPendente = false;
-    if (parcelasCliente.length === 0) { tbodyParcelas.innerHTML = '缘<td colspan="5" class="text-center">Nenhuma parcela encontrada</td>'; }
+    if (parcelasCliente.length === 0) { tbodyParcelas.innerHTML = '<tr><td colspan="5" class="text-center">Nenhuma parcela encontrada</td></tr>'; }
     else {
         parcelasCliente.sort((a,b) => a.parcela - b.parcela).forEach(p => {
             let statusClass = '', statusText = '';
@@ -476,11 +486,11 @@ function consultarScore() {
             else { statusClass = 'status-pendente'; statusText = 'PENDENTE'; temPendente = true; }
             const row = tbodyParcelas.insertRow();
             row.innerHTML = `
-                <td class="text-center">${p.parcela}ª / ${p.totalParcelas}  \n
-                <td class="text-center">R$ ${parseFloat(p.valor).toFixed(2)}  \n
-                <td class="text-center">${formatarDataBR(p.vencimento)}  \n
-                <td class="text-center"><span class="${statusClass}">${statusText}</span>  \n
-                <td class="text-center">${p.status === 'pendente' ? `<button class="btn btn-sm btn-success" onclick="irParaPagamento('${cpf}', ${p.id})">Pagar</button>` : (p.status === 'aguardando_confirmacao' ? '<span class="text-info">⏳ Aguardando</span>' : '<span class="text-success">✓ Pago</span>')}  \n
+                <td class="text-center">${p.parcela}ª / ${p.totalParcelas}</td>
+                <td class="text-center">R$ ${parseFloat(p.valor).toFixed(2)}</td>
+                <td class="text-center">${formatarDataBR(p.vencimento)}</td>
+                <td class="text-center"><span class="${statusClass}">${statusText}</span></td>
+                <td class="text-center">${p.status === 'pendente' ? `<button class="btn btn-sm btn-success" onclick="irParaPagamento('${cpf}', ${p.id})">Pagar</button>` : (p.status === 'aguardando_confirmacao' ? '<span class="text-info">⏳ Aguardando</span>' : '<span class="text-success">✓ Pago</span>')}</td>
             `;
         });
     }
@@ -493,14 +503,13 @@ function consultarScore() {
         historico.forEach(h => {
             const row = tbodyHistorico.insertRow();
             const pontosClass = h.pontos > 0 ? 'text-success' : 'text-danger';
-            row.innerHTML = ` <td>${h.data}</td><td class="${pontosClass} fw-bold">${h.pontos > 0 ? '+' + h.pontos : h.pontos}</td><td>${h.motivo}</td>`;
+            row.innerHTML = `<td>${h.data}</td><td class="${pontosClass} fw-bold">${h.pontos > 0 ? '+' + h.pontos : h.pontos}</td><td>${h.motivo}</td>`;
         });
         if (historico.length === 0) tbodyHistorico.innerHTML = '缘<td colspan="3" class="text-center">Nenhum histórico disponível</td>';
     }
     
     sessionStorage.setItem('clienteCpf', cpf);
     
-    // Carregar notificações não lidas
     const notificacoesNaoLidas = notificacoes.filter(n => n.cpf === cpf && !n.lida);
     notificacoesNaoLidas.forEach(n => {
         adicionarNotificacao(cpf, nome, n.titulo, n.mensagem, n.tipo);
@@ -588,56 +597,426 @@ function atualizarExibicaoScore(cpf) {
     }
 }
 
-// ===== FUNÇÕES DE IMPRESSÃO =====
+// ===== FUNÇÃO IMPRIMIR DUPLICATA TOTAL =====
 function imprimirDuplicataTotal(cpf) {
     const parcelas = duplicatas.filter(d => d.devedor.cpf === cpf);
     if (parcelas.length === 0) return;
     const dup = parcelas[0];
     const valorTotal = dup.valorTotal;
     const dataEmissao = formatarDataBR(dup.dataEmissao);
-    let tabelaParcelas = '';
-    parcelas.sort((a,b) => a.parcela - b.parcela).forEach(p => { tabelaParcelas += `汽<td class="text-center">${p.parcela}ª</td><td class="text-center">R$ ${parseFloat(p.valor).toFixed(2)}</td><td class="text-center">${formatarDataBR(p.vencimento)}</td> </tr>`; });
+    
+    // VALIDAÇÃO DE DATA
+    const dataVencimento = new Date(dup.vencimento);
+    const dataEmissaoDate = new Date(dup.dataEmissao);
+    if (dataVencimento < dataEmissaoDate) {
+        alert('⚠️ ATENÇÃO: A data de vencimento é anterior à data de emissão!\n\nIsso impede o protesto da duplicata. Corrija as datas antes de prosseguir.');
+        return;
+    }
+    
     const janela = window.open('', '_blank');
-    janela.document.write(`<html><head><title>Duplicata Total</title><style>@page{size:A4;margin:1.5cm}body{font-family:monospace}.container{max-width:800px;margin:auto}.titulo{text-align:center;font-size:28px}.info-credor{border:1px solid #000;padding:10px}.tabela{width:100%;border-collapse:collapse}.tabela th,.tabela td{border:1px solid #000;padding:8px;text-align:center}.multa{background:#fff3cd;text-align:center;padding:8px;border:1px solid #000}.sacado{border:1px solid #000;padding:10px}.assinatura-dupla{display:flex;justify-content:space-between;margin-top:40px}.assinatura-item{flex:1;text-align:center}.linha{border-bottom:1px solid #000;margin:5px 0}</style></head>
-    <body><div class="container"><div class="titulo">Duplicata de Venda Mercantil</div><div class="subtitulo">VALOR TOTAL: R$ ${parseFloat(valorTotal).toFixed(2)}</div>
-    <div class="info-credor"><div><strong>${configCredor.nome} - ${configCredor.fantasia}</strong></div><div>${configCredor.endereco} - ${configCredor.bairro} | ${configCredor.cidade} - ${configCredor.uf}</div><div>C.N.P.J (MF) Nº ${configCredor.cnpj} | C.C.M Nº ${configCredor.ccm}</div><div>Mun. ${configCredor.cidade} - ${configCredor.uf} | DATA DA EMISSÃO: ${dataEmissao}</div></div>
-    <table class="tabela"><tr><th>NF FATURA N°</th><th>VALOR TOTAL</th><th>PARCELAS</th><th>Vencimento da 1ª</th></tr><tr><td>${dup.numNF || '______'}</td><td>R$ ${parseFloat(valorTotal).toFixed(2)}</td><td>${dup.totalParcelas}x de R$ ${parseFloat(dup.valor).toFixed(2)}</td><td>${formatarDataBR(dup.vencimento)}</td></tr></table>
-    <div class="subtitulo">📋 DETALHES DAS PARCELAS:</div><table class="tabela"><thead><tr><th>Parcela</th><th>Valor (R$)</th><th>Data de Vencimento</th></tr></thead><tbody>${tabelaParcelas}</tbody></table>
-    <div class="multa">⚠️ APÓS O VENCIMENTO: MULTA DE 2% + MORA DIÁRIA DE R$ 2,14 ⚠️</div>
-    <div class="sacado"><div><strong>NOME DO SACADO:</strong> ${dup.devedor.nome.toUpperCase()}</div><div><strong>ENDEREÇO:</strong> ${dup.devedor.rua.toUpperCase()}, Nº ${dup.devedor.numero} - ${dup.devedor.bairro.toUpperCase()}</div><div><strong>CEP:</strong> ${dup.devedor.cep || '______'} | <strong>MUNICÍPIO:</strong> ${dup.devedor.cidade.toUpperCase()}</div><div><strong>PRAÇA DE PAGAMENTO:</strong> ${dup.devedor.cidade.toUpperCase()} | <strong>CNPJ/CPF:</strong> ${formatarCPF(dup.devedor.cpf)}</div><div><strong>Insc. Est.:</strong> ISENTO</div></div>
-    <div style="border:1px solid #000; padding:5px;">REP.M: 30</div>
-    <div style="display:grid; grid-template-columns:repeat(3,1fr); margin-top:20px;"><div>VALOR POR EXTENSO<br>${numeroPorExtenso(valorTotal).toUpperCase()}</div><div>DEVEDOR<br>${dup.devedor.nome.toUpperCase()}</div><div>PRAÇA DE PAGAMENTO<br>${dup.devedor.cidade.toUpperCase()}</div></div>
-    <div class="assinatura-dupla"><div class="assinatura-item"><div>_____/____/________</div><div>(DATA DE ACEITE)</div></div><div class="assinatura-item"><div class="linha"></div><div>ASSINATURA DO SACADO</div></div></div>
-    <div class="no-print" style="margin-top:20px;"><button onclick="window.print()">Imprimir</button> <button onclick="window.close()">Fechar</button></div></div></body></html>`);
+    janela.document.write(`<html><head><title>Duplicata de Venda Mercantil</title><style>
+        @page { size: A4; margin: 1.5cm; }
+        body { font-family: 'Times New Roman', Times, serif; font-size: 12pt; }
+        .container { max-width: 800px; margin: auto; }
+        .titulo { text-align: center; font-size: 22pt; font-weight: bold; margin-bottom: 20px; }
+        .info-credor { border: 1px solid #000; padding: 10px; margin-bottom: 15px; }
+        .tabela { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+        .tabela th, .tabela td { border: 1px solid #000; padding: 8px; }
+        .multa { background: #fff3cd; text-align: center; padding: 8px; border: 1px solid #000; margin-bottom: 15px; }
+        .sacado { border: 1px solid #000; padding: 10px; margin-bottom: 15px; }
+        .repm { border: 1px solid #000; padding: 5px; text-align: center; margin-bottom: 15px; }
+        .rodape { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 20px; text-align: center; }
+        .assinatura-dupla { display: flex; justify-content: space-between; margin-top: 40px; }
+        .assinatura-item { flex: 1; text-align: center; }
+        .linha { border-bottom: 1px solid #000; margin: 5px 0; height: 30px; }
+        .no-print { margin-top: 20px; text-align: center; }
+        @media print { .no-print { display: none; } }
+    </style></head>
+    <body>
+        <div class="container">
+            <div class="titulo">Duplicata de Venda Mercantil</div>
+            
+            <div class="info-credor">
+                <div><strong>${configCredor.nome} - ${configCredor.fantasia}</strong></div>
+                <div>${configCredor.endereco} - ${configCredor.bairro} | ${configCredor.cidade} - ${configCredor.uf}</div>
+                <div>C.N.P.J (MF) Nº ${configCredor.cnpj} | C.C.M Nº ${configCredor.ccm}</div>
+                <div>Mun. ${configCredor.cidade} - ${configCredor.uf} | DATA DA EMISSÃO: ${dataEmissao}</div>
+            </div>
+            
+            <table class="tabela">
+                <thead>
+                    <tr><th>NF FATURA N°</th><th>VALOR TOTAL</th><th>PARCELAS</th><th>Vencimento da 1ª</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td class="text-center">${dup.numNF || '______'}</td>
+                        <td class="text-center">R$ ${parseFloat(valorTotal).toFixed(2)}</td>
+                        <td class="text-center">${dup.totalParcelas}x de R$ ${parseFloat(dup.valor).toFixed(2)}</td>
+                        <td class="text-center">${formatarDataBR(dup.vencimento)}</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <div class="multa">⚠️ APÓS O VENCIMENTO: MULTA DE 2% + MORA DIÁRIA DE R$ 2,14 ⚠️</div>
+            
+            <div class="sacado">
+                <div><strong>NOME DO SACADO:</strong> ${dup.devedor.nome.toUpperCase()}</div>
+                <div><strong>ENDEREÇO:</strong> ${dup.devedor.rua.toUpperCase()}, Nº ${dup.devedor.numero} - ${dup.devedor.bairro.toUpperCase()}</div>
+                <div><strong>CEP:</strong> ${dup.devedor.cep || '______'} | <strong>MUNICÍPIO:</strong> ${dup.devedor.cidade.toUpperCase()}</div>
+                <div><strong>PRAÇA DE PAGAMENTO:</strong> ${dup.devedor.cidade.toUpperCase()} | <strong>CNPJ/CPF:</strong> ${formatarCPF(dup.devedor.cpf)}</div>
+                <div><strong>Insc. Est.:</strong> ISENTO</div>
+            </div>
+            
+            <div class="repm">REP.M: 30</div>
+            
+            <div class="rodape">
+                <div>VALOR POR EXTENSO<br>${numeroPorExtenso(valorTotal).toUpperCase()}</div>
+                <div>NOME DO CREDOR<br>${configCredor.nome.toUpperCase()}</div>
+                <div>PRAÇA DE PAGAMENTO<br>${dup.devedor.cidade.toUpperCase()}</div>
+            </div>
+            
+            <div class="assinatura-dupla">
+                <div class="assinatura-item">
+                    <div>_____/____/________</div>
+                    <div>(DATA DE ACEITE)</div>
+                </div>
+                <div class="assinatura-item">
+                    <div class="linha"></div>
+                    <div>ASSINATURA DO SACADO</div>
+                </div>
+            </div>
+            
+            <div class="no-print">
+                <button onclick="window.print()">🖨️ Imprimir</button>
+                <button onclick="window.close()">❌ Fechar</button>
+            </div>
+        </div>
+    </body>
+    </html>`);
     janela.document.close();
 }
 
+// ===== FUNÇÃO IMPRIMIR CONTRATO TOTAL (VERSÃO BONITA E SEM TESTEMUNHAS) =====
 function imprimirContratoTotal(cpf) {
     const parcelas = duplicatas.filter(d => d.devedor.cpf === cpf);
     if (parcelas.length === 0) return;
     const dup = parcelas[0];
     const valorTotal = dup.valorTotal;
     const totalParcelas = dup.totalParcelas;
+    const valorParcela = dup.valor;
+    
+    // Data atual para o contrato
     const dataAtual = new Date();
-    const dataExtenso = `${dataAtual.getDate()} de ${['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'][dataAtual.getMonth()]} de ${dataAtual.getFullYear()}`;
-    let tabelaParcelas = '';
-    parcelas.sort((a,b) => a.parcela - b.parcela).forEach(p => { tabelaParcelas += `汽<td style="border:1px solid #000;padding:5px;">${p.parcela}ª</td><td style="border:1px solid #000;padding:5px;">R$ ${parseFloat(p.valor).toFixed(2)}</td><td style="border:1px solid #000;padding:5px;">${formatarDataBR(p.vencimento)}</td> </tr>`; });
+    const meses = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+    const dataExtenso = `${dataAtual.getDate()} de ${meses[dataAtual.getMonth()]} de ${dataAtual.getFullYear()}`;
+    
     const janela = window.open('', '_blank');
-    janela.document.write(`<html><head><title>Contrato</title><style>@page{size:A4;margin:2cm}body{font-family:'Times New Roman',serif;font-size:12pt}h1,h2{text-align:center}.contrato-numero{text-align:right}.clausula{margin-bottom:15px;text-align:justify}.clausula-titulo{font-weight:bold}.multa-destaque{border:2px solid #000;padding:10px;text-align:center}.parcelas-info{border:1px solid #000;padding:10px;margin:20px 0}.assinaturas{display:flex;justify-content:space-between;margin-top:40px}.assinatura{text-align:center;width:45%}.linha{border-bottom:1px solid #000;margin:10px 0;height:30px}.data-local{text-align:right}.info-adicional{margin:20px 0;padding:10px;background:#f5f5f5}</style></head>
-    <body><div class="contrato-numero">CONTRATO Nº ${dup.numNF || dup.id.toString().slice(-6)}</div>
-    <h1>CONTRATO DE PRESTAÇÃO DE SERVIÇOS MECÂNICOS</h1><h2>FRANK MOTOS - OFICINA ESPECIALIZADA EM MOTOCICLETAS</h2>
-    <div><p><strong>CONTRATANTE:</strong> ${dup.devedor.nome}, CPF ${formatarCPF(dup.devedor.cpf)}, ${dup.devedor.rua}, nº ${dup.devedor.numero}, ${dup.devedor.bairro}, ${dup.devedor.cidade} - ${dup.devedor.estado}, CEP ${dup.devedor.cep || '______'}.</p><p><strong>CONTRATADA:</strong> FRANKELLEY STEFANO ALVES AZEVEDO ME, CNPJ ${configCredor.cnpj}, ${configCredor.endereco}, ${configCredor.bairro}, ${configCredor.cidade} - ${configCredor.uf}, CEP ${configCredor.cep}.</p></div>
-    <div class="clausula"><div class="clausula-titulo">CLÁUSULA PRIMEIRA - DO OBJETO</div><p>Prestação de serviços de oficina mecânica em motocicletas, conforme Nota Fiscal nº ${dup.numNF}, emitida em ${formatarDataBR(dup.dataEmissao)}.</p></div>
-    <div class="clausula"><div class="clausula-titulo">CLÁUSULA SEGUNDA - DO VALOR E FORMA DE PAGAMENTO</div><p>Valor total: R$ ${parseFloat(valorTotal).toFixed(2)} (${numeroPorExtenso(valorTotal)}), pago em ${totalParcelas}x de R$ ${parseFloat(dup.valor).toFixed(2)}.</p></div>
-    <div class="parcelas-info"><table style="width:100%;border-collapse:collapse;"><thead><tr><th style="border:1px solid #000;">Parcela</th><th style="border:1px solid #000;">Valor</th><th style="border:1px solid #000;">Vencimento</th></tr></thead><tbody>${tabelaParcelas}</tbody></table><p>Data da primeira parcela: ${formatarDataBR(dup.vencimento)}</p></div>
-    <div class="clausula"><div class="clausula-titulo">CLÁUSULA TERCEIRA - DA MORA</div><p>a) MULTA DE 2% sobre o valor; b) JUROS DE 1% AO MÊS; c) CORREÇÃO MONETÁRIA.</p></div>
-    <div class="multa-destaque">⚠️ APÓS O VENCIMENTO: MULTA DE 2% + JUROS DE 1% AO MÊS ⚠️</div>
-    <div class="clausula"><div class="clausula-titulo">CLÁUSULA QUARTA - DA GARANTIA</div><p>Garantia de 90 dias contra defeitos de fabricação ou erro na execução do serviço.</p></div>
-    <div class="clausula"><div class="clausula-titulo">CLÁUSULA QUINTA - DO FORO</div><p>Foro da comarca de ${configCredor.cidade} - ${configCredor.uf}.</p></div>
-    <div class="info-adicional"><p>• As peças substituídas ficarão à disposição por 30 dias; • O veículo será entregue mediante comprovante de pagamento.</p></div>
-    <div class="data-local"><p>${configCredor.cidade} - ${configCredor.uf}, ${dataExtenso}.</p></div>
-    <div class="assinaturas"><div class="assinatura"><div class="linha"></div><p><strong>CONTRATANTE</strong><br>${dup.devedor.nome}</p></div><div class="assinatura"><div class="linha"></div><p><strong>CONTRATADA</strong><br>FRANK MOTOS<br>${configCredor.nome}</p></div></div>
-    <div class="no-print" style="margin-top:20px;"><button onclick="window.print()">Imprimir</button> <button onclick="window.close()">Fechar</button></div></body></html>`);
+    janela.document.write(`<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Contrato de Prestação de Serviços - Frank Motos</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2.5cm;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 11pt;
+            line-height: 1.5;
+            color: #1a1a1a;
+            background: #fff;
+        }
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #ffc107;
+            padding-bottom: 15px;
+        }
+        .titulo-principal {
+            font-size: 18pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #1a1a1a;
+            margin-bottom: 5px;
+        }
+        .subtitulo {
+            font-size: 12pt;
+            color: #555;
+            margin-top: 5px;
+        }
+        .numero-contrato {
+            text-align: right;
+            font-size: 10pt;
+            margin-bottom: 20px;
+            color: #666;
+        }
+        .partes {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-left: 5px solid #ffc107;
+            padding: 15px;
+            margin-bottom: 25px;
+            border-radius: 8px;
+        }
+        .partes h3 {
+            font-size: 13pt;
+            margin-bottom: 12px;
+            color: #1a1a1a;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .partes p {
+            margin-bottom: 8px;
+        }
+        .partes strong {
+            color: #1a1a1a;
+        }
+        .clausula {
+            margin-bottom: 18px;
+            text-align: justify;
+        }
+        .clausula-titulo {
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 11pt;
+            margin-bottom: 8px;
+            color: #1a1a1a;
+            background: #fff8e1;
+            padding: 5px 8px;
+            border-left: 4px solid #ffc107;
+        }
+        .valor-destaque {
+            background: linear-gradient(135deg, #ffc107 0%, #ff8c00 100%);
+            color: #1a1a1a;
+            padding: 15px;
+            text-align: center;
+            border-radius: 12px;
+            margin: 20px 0;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .valor-destaque .label {
+            font-size: 11pt;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.8;
+        }
+        .valor-destaque .valor {
+            font-size: 24pt;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+        .valor-destaque .parcelas {
+            font-size: 14pt;
+            font-weight: bold;
+        }
+        .valor-destaque .extenso {
+            font-size: 10pt;
+            font-style: italic;
+            margin-top: 8px;
+            opacity: 0.9;
+        }
+        .multa-destaque {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+            margin: 20px 0;
+            font-weight: bold;
+            color: #856404;
+        }
+        .info-adicional {
+            background: #f0f7ff;
+            border-left: 4px solid #ffc107;
+            padding: 12px;
+            margin: 20px 0;
+            border-radius: 8px;
+            font-size: 10pt;
+        }
+        .assinaturas {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 50px;
+            gap: 50px;
+        }
+        .assinatura {
+            flex: 1;
+            text-align: center;
+        }
+        .linha-assinatura {
+            border-bottom: 1px solid #000;
+            margin: 10px 0;
+            height: 40px;
+        }
+        .data-local {
+            text-align: right;
+            margin: 25px 0;
+            font-style: italic;
+            color: #555;
+        }
+        .rodape {
+            margin-top: 35px;
+            text-align: center;
+            font-size: 9pt;
+            border-top: 1px solid #ddd;
+            padding-top: 12px;
+            color: #888;
+        }
+        .no-print {
+            text-align: center;
+            margin-top: 25px;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .no-print button {
+            padding: 10px 25px;
+            margin: 0 8px;
+            cursor: pointer;
+            background: #ffc107;
+            border: none;
+            border-radius: 25px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        .no-print button:hover {
+            background: #e0a800;
+            transform: scale(1.02);
+        }
+        @media print {
+            .no-print {
+                display: none;
+            }
+            body {
+                margin: 0;
+                padding: 0;
+            }
+            .multa-destaque, .valor-destaque, .partes {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="titulo-principal">CONTRATO DE PRESTAÇÃO DE SERVIÇOS</div>
+            <div class="subtitulo">FRANK MOTOS - OFICINA ESPECIALIZADA EM MOTOCICLETAS</div>
+        </div>
+        <div class="numero-contrato">Contrato nº: ${dup.numNF || dup.id.toString().slice(-8)}/2026</div>
+        
+        <div class="partes">
+            <h3>📋 PARTES CONTRATANTES</h3>
+            <p><strong>CONTRATANTE (DEVEDOR):</strong><br>
+            ${dup.devedor.nome.toUpperCase()}<br>
+            CPF/CNPJ: ${formatarCPF(dup.devedor.cpf)}<br>
+            Endereço: ${dup.devedor.rua.toUpperCase()}, nº ${dup.devedor.numero} - ${dup.devedor.bairro.toUpperCase()}<br>
+            Cidade: ${dup.devedor.cidade.toUpperCase()} - ${dup.devedor.estado.toUpperCase()}<br>
+            CEP: ${dup.devedor.cep || '______'}</p>
+            
+            <p><strong>CONTRATADA (CREDOR - FRANK MOTOS):</strong><br>
+            ${configCredor.nome.toUpperCase()}<br>
+            CNPJ: ${configCredor.cnpj}<br>
+            Endereço: ${configCredor.endereco} - ${configCredor.bairro}<br>
+            ${configCredor.cidade} - ${configCredor.uf} | CEP: ${configCredor.cep}<br>
+            Contato: ${configCredor.contato}</p>
+        </div>
+        
+        <div class="valor-destaque">
+            <div class="label">💰 VALOR DO CONTRATO</div>
+            <div class="valor">R$ ${parseFloat(valorTotal).toFixed(2)}</div>
+            <div class="parcelas">${totalParcelas}x de R$ ${parseFloat(valorParcela).toFixed(2)}</div>
+            <div class="extenso">${numeroPorExtenso(valorTotal).toUpperCase()}</div>
+        </div>
+        
+        <div class="clausula">
+            <div class="clausula-titulo">CLÁUSULA PRIMEIRA - DO OBJETO</div>
+            <p>O presente contrato tem como objeto a prestação de serviços de oficina mecânica especializada em motocicletas, incluindo reparos, manutenção preventiva e corretiva, substituição de peças, e demais serviços correlatos, conforme Nota Fiscal nº ${dup.numNF || '______'}, emitida em ${formatarDataBR(dup.dataEmissao)}.</p>
+        </div>
+        
+        <div class="clausula">
+            <div class="clausula-titulo">CLÁUSULA SEGUNDA - DO PAGAMENTO</div>
+            <p>O valor total de R$ ${parseFloat(valorTotal).toFixed(2)} será pago em ${totalParcelas}x de R$ ${parseFloat(valorParcela).toFixed(2)}, com vencimento da primeira parcela em ${formatarDataBR(dup.vencimento)} e as demais nos meses subsequentes. Os pagamentos deverão ser efetuados preferencialmente via PIX, transferência bancária ou em dinheiro.</p>
+        </div>
+        
+        <div class="clausula">
+            <div class="clausula-titulo">CLÁUSULA TERCEIRA - DA MORA E PENALIDADES</div>
+            <p>Em caso de atraso no pagamento de qualquer parcela, o CONTRATANTE ficará sujeito a:<br>
+            a) <strong>MULTA DE 2%</strong> sobre o valor da parcela vencida;<br>
+            b) <strong>JUROS DE MORA DE 1% AO MÊS</strong>, calculados proporcionalmente;<br>
+            c) <strong>MORA DIÁRIA DE R$ 2,14</strong> por dia de atraso.</p>
+        </div>
+        
+        <div class="multa-destaque">
+            ⚠️ APÓS O VENCIMENTO: MULTA DE 2% + JUROS DE 1% AO MÊS + MORA DIÁRIA DE R$ 2,14 ⚠️
+        </div>
+        
+        <div class="clausula">
+            <div class="clausula-titulo">CLÁUSULA QUARTA - DA GARANTIA</div>
+            <p>A CONTRATADA oferece garantia de 90 (noventa) dias sobre os serviços executados e peças substituídas, contados a partir da data da Nota Fiscal, exceto em casos de mau uso, acidentes ou desgaste natural do veículo.</p>
+        </div>
+        
+        <div class="clausula">
+            <div class="clausula-titulo">CLÁUSULA QUINTA - DAS OBRIGAÇÕES</div>
+            <p><strong>DO CONTRATANTE:</strong> Efetuar os pagamentos nas datas estipuladas, retirar o veículo no prazo de 5 dias úteis após conclusão dos serviços, apresentar documento e comprovante de pagamento para retirada.<br>
+            <strong>DA CONTRATADA:</strong> Executar os serviços com qualidade, utilizar peças de procedência garantida, manter o veículo em local seguro durante o período em sua guarda.</p>
+        </div>
+        
+        <div class="clausula">
+            <div class="clausula-titulo">CLÁUSULA SEXTA - DO PROTESTO E INADIMPLÊNCIA</div>
+            <p>O não pagamento de qualquer parcela no vencimento implicará no vencimento antecipado de todas as parcelas restantes, podendo a CONTRATADA protestar o título ou inscrever o nome do CONTRATANTE nos órgãos de proteção ao crédito (SPC/SERASA).</p>
+        </div>
+        
+        <div class="clausula">
+            <div class="clausula-titulo">CLÁUSULA SÉTIMA - DO FORO</div>
+            <p>Fica eleito o foro da comarca de ${configCredor.cidade} - ${configCredor.uf} para dirimir quaisquer dúvidas oriundas do presente contrato, com renúncia expressa a qualquer outro.</p>
+        </div>
+        
+        <div class="info-adicional">
+            <strong>📌 INFORMAÇÕES IMPORTANTES:</strong><br>
+            • As peças substituídas ficarão disponíveis para retirada por até 30 dias.<br>
+            • O veículo será entregue mediante comprovante de pagamento e documento com foto.<br>
+            • Em caso de dúvidas, entre em contato pelo telefone: ${configCredor.contato}<br>
+            • Este contrato tem validade legal como título executivo extrajudicial.
+        </div>
+        
+        <div class="data-local">
+            <p>${configCredor.cidade} - ${configCredor.uf}, ${dataExtenso}.</p>
+        </div>
+        
+        <div class="assinaturas">
+            <div class="assinatura">
+                <div class="linha-assinatura"></div>
+                <p><strong>${dup.devedor.nome.toUpperCase()}</strong><br>CONTRATANTE</p>
+            </div>
+            <div class="assinatura">
+                <div class="linha-assinatura"></div>
+                <p><strong>FRANK MOTOS</strong><br>${configCredor.nome.toUpperCase()}<br>CONTRATADA</p>
+            </div>
+        </div>
+        
+        <div class="rodape">
+            <p>Documento emitido eletronicamente - Frank Motos © ${dataAtual.getFullYear()} | Este contrato é regido pelas leis brasileiras</p>
+        </div>
+        
+        <div class="no-print">
+            <button onclick="window.print()">🖨️ IMPRIMIR CONTRATO</button>
+            <button onclick="window.close()">❌ FECHAR</button>
+        </div>
+    </div>
+</body>
+</html>`);
     janela.document.close();
 }
 
@@ -649,13 +1028,13 @@ function imprimirDuplicata(id) {
     <body><div class="container"><div class="titulo">Duplicata</div><div class="info-parcela">📄 ${dup.parcela}ª PARCELA de ${dup.totalParcelas} 📄</div>
     <div class="info-credor"><div><strong>${configCredor.nome} - ${configCredor.fantasia}</strong></div><div>${configCredor.endereco} - ${configCredor.bairro} | ${configCredor.cidade} - ${configCredor.uf}</div>
     <div>C.N.P.J (MF) Nº ${configCredor.cnpj} | C.C.M Nº ${configCredor.ccm}</div><div>Mun. ${configCredor.cidade} - ${configCredor.uf} | DATA DA EMISSÃO: ${formatarDataBR(dup.dataEmissao)}</div></div>
-    <table class="tabela"><tr><th>NF FATURA N°</th><th>Valor</th><th>Duplicação</th><th>Vencimento</th></tr><tr><td>${dup.numNF || '______'}</td><td>R$ ${parseFloat(dup.valor).toFixed(2)}</td><td>${dup.numDuplicata || `${dup.parcela}/${dup.totalParcelas}`}</td><td>${formatarDataBR(dup.vencimento)}</td></tr></table>
+    <table class="tabela"><tr><th>NF FATURA N°</th><th>Valor</th><th>Duplicação</th><th>Vencimento</th></tr><tr><td class="text-center">${dup.numNF || '______'}</td><td class="text-center">R$ ${parseFloat(dup.valor).toFixed(2)}</td><td class="text-center">${dup.numDuplicata || `${dup.parcela}/${dup.totalParcelas}`}</td><td class="text-center">${formatarDataBR(dup.vencimento)}</td></tr></table>
     <div class="multa">⚠️ APÓS O VENCIMENTO: MULTA DE 2% + MORA DIÁRIA DE R$ 2,14 ⚠️</div>
     <div class="sacado"><div><strong>NOME DO SACADO:</strong> ${dup.devedor.nome.toUpperCase()}</div><div><strong>ENDEREÇO:</strong> ${dup.devedor.rua.toUpperCase()}, Nº ${dup.devedor.numero} - ${dup.devedor.bairro.toUpperCase()}</div>
     <div><strong>CEP:</strong> ${dup.devedor.cep || '______'} | <strong>MUNICÍPIO:</strong> ${dup.devedor.cidade.toUpperCase()}</div>
     <div><strong>PRAÇA DE PAGAMENTO:</strong> ${dup.devedor.cidade.toUpperCase()} | <strong>CNPJ/CPF:</strong> ${formatarCPF(dup.devedor.cpf)}</div><div><strong>Insc. Est.:</strong> ISENTO</div></div>
     <div class="repm">REP.M: 30</div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);margin-top:20px;"><div>VALOR POR EXTENSO<br>${dup.valorExtenso.toUpperCase()}</div><div>DEVEDOR<br>${dup.devedor.nome.toUpperCase()}</div><div>PRAÇA DE PAGAMENTO<br>${dup.devedor.cidade.toUpperCase()}</div></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);margin-top:20px;"><div>VALOR POR EXTENSO<br>${dup.valorExtenso.toUpperCase()}</div><div>NOME DO CREDOR<br>${configCredor.nome.toUpperCase()}</div><div>PRAÇA DE PAGAMENTO<br>${dup.devedor.cidade.toUpperCase()}</div></div>
     <div class="assinatura-dupla"><div class="assinatura-item"><div>_____/____/________</div><div>(DATA DE ACEITE)</div></div><div class="assinatura-item"><div class="linha"></div><div>ASSINATURA DO SACADO</div></div></div>
     <div class="no-print" style="margin-top:20px;"><button onclick="window.print()">Imprimir</button> <button onclick="window.close()">Fechar</button></div></div></body></html>`);
     janela.document.close();
@@ -674,7 +1053,7 @@ function carregarChecklistClientes() {
         const totalServicos = cliente.duplicatas.length;
         const statusGeral = cliente.duplicatas.every(d => d.status === 'pago') ? '✅ Regular' : '⚠️ Pendente';
         const row = tbody.insertRow();
-        row.innerHTML = `<td class="text-center">${idx}</td><td><strong>${cliente.devedor.nome}</strong></td><td>${formatarCPF(cpf)}</td><td class="text-center">${pontos}</td><td class="text-center"><span class="badge ${nivel.cor.replace('nivel-', 'bg-')}">${nivel.nome}</span></td><td class="text-center">${formatarDataBR(cliente.dataCadastro)}</td><td class="text-center">${totalServicos}</td><td class="text-center">R$ ${cliente.valorTotal.toFixed(2)}</td><td class="${cliente.duplicatas.every(d => d.status === 'pago') ? 'text-success' : 'text-danger'}">${statusGeral}</td>`;
+        row.innerHTML = `<td class="text-center">${idx}</td>}<td><strong>${cliente.devedor.nome}</strong></td><td>${formatarCPF(cpf)}</td><td class="text-center">${pontos}</td><td class="text-center"><span class="badge ${nivel.cor.replace('nivel-', 'bg-')}">${nivel.nome}</span></td><td class="text-center">${formatarDataBR(cliente.dataCadastro)}</td><td class="text-center">${totalServicos}</td><td class="text-center">R$ ${cliente.valorTotal.toFixed(2)}</td><td class="${cliente.duplicatas.every(d => d.status === 'pago') ? 'text-success' : 'text-danger'}">${statusGeral}</td>`;
         idx++;
     }
 }
@@ -743,7 +1122,7 @@ function atualizarEstatisticas(){
         v.textContent=`R$ ${duplicatas.reduce((a,d)=>a+parseFloat(d.valor),0).toFixed(2)}`; }
 }
 function limparTodosDados(){
-    if(confirm('ATENÇÃO! Apagar TODOS os dados?')){ localStorage.clear(); duplicatas=[]; pontuacoes={}; solicitacoesPagamento=[]; notificacoes=[]; configCredor={nome:"FRANKELLEY STEFANO ALVES AZEVEDO",fantasia:"FRANK MOTOS",cnpj:"33.917.740/0001-46",ie:"0000001109367",ccm:"11.222-3",contato:"(69) 98494-0207",endereco:"AV: MIGUEL VIEIRA FERREIRA, 5454",bairro:"Cidade Alta",cidade:"ROLIM DE MOURA",uf:"RO",cep:"76940-000"}; carregarTabelaClientes(); atualizarEstatisticas(); carregarConfigAdmin(); alert('Dados removidos!'); }
+    if(confirm('ATENÇÃO! Apagar TODOS os dados?')){ localStorage.clear(); duplicatas=[]; pontuacoes={}; solicitacoesPagamento=[]; notificacoes=[]; configCredor={nome:"FRANKELLEY STEFANO ALVES AZEVEDO",fantasia:"FRANK MOTOS",cnpj:"33.917.740/0001-46",ie:"0000001109367",ccm:"11.222-3",contato:"(69) 98494-0207",endereco:"Av Dr Miguel Vieira Ferreira, 5454",bairro:"Cidade Alta",cidade:"ROLIM DE MOURA",uf:"RO",cep:"76940-000"}; carregarTabelaClientes(); atualizarEstatisticas(); carregarConfigAdmin(); alert('Dados removidos!'); }
 }
 function carregarConfigAdmin(){
     const n=document.getElementById('configNomeCredor'); if(n){
