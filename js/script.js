@@ -12,13 +12,23 @@ let configCredor = JSON.parse(localStorage.getItem('configCredor')) || {
 };
 
 // ===== FUNÇÕES AUXILIARES =====
-function formatarDataBR(dataString) { if (!dataString) return ''; return dataString.split('-').reverse().join('/'); }
+function formatarDataBR(dataString) { 
+    if (!dataString) return ''; 
+    return dataString.split('-').reverse().join('/'); 
+}
+
+function formatarDataBRComBarras(dataString) {
+    if (!dataString) return '___/___/______';
+    return dataString.split('-').reverse().join('/');
+}
+
 function formatarDataExtenso(dataString) {
     if (!dataString) return '';
     const meses = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
     const data = new Date(dataString + 'T12:00:00');
     return `${data.getDate()} de ${meses[data.getMonth()]} de ${data.getFullYear()}`;
 }
+
 function formatarCPF(cpf) {
     if (!cpf) return '';
     cpf = cpf.replace(/\D/g, '');
@@ -26,7 +36,47 @@ function formatarCPF(cpf) {
     if (cpf.length === 14) return cpf.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
     return cpf;
 }
-function getPrimeiroNome(nomeCompleto) { return nomeCompleto ? nomeCompleto.split(' ')[0] : 'Cliente'; }
+
+function aplicarMascaraCPFouCNPJ(input) {
+    let valor = input.value.replace(/\D/g, '');
+    if (valor.length <= 11) {
+        valor = valor.replace(/(\d{3})(\d)/, '$1.$2');
+        valor = valor.replace(/(\d{3})(\d)/, '$1.$2');
+        valor = valor.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+    } else {
+        valor = valor.replace(/^(\d{2})(\d)/, '$1.$2');
+        valor = valor.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
+        valor = valor.replace(/\.(\d{3})(\d)/, '.$1/$2');
+        valor = valor.replace(/(\d{4})(\d)/, '$1-$2');
+    }
+    input.value = valor;
+}
+
+function validarCPFouCNPJ(valor) {
+    valor = valor.replace(/\D/g, '');
+    if (valor.length === 11) {
+        if (/^(\d)\1{10}$/.test(valor)) return false;
+        let soma = 0;
+        for (let i = 0; i < 9; i++) soma += parseInt(valor.charAt(i)) * (10 - i);
+        let resto = 11 - (soma % 11);
+        let digito1 = resto >= 10 ? 0 : resto;
+        if (parseInt(valor.charAt(9)) !== digito1) return false;
+        soma = 0;
+        for (let i = 0; i < 10; i++) soma += parseInt(valor.charAt(i)) * (11 - i);
+        resto = 11 - (soma % 11);
+        let digito2 = resto >= 10 ? 0 : resto;
+        return parseInt(valor.charAt(10)) === digito2;
+    } else if (valor.length === 14) {
+        if (/^(\d)\1{13}$/.test(valor)) return false;
+        return true;
+    }
+    return false;
+}
+
+function getPrimeiroNome(nomeCompleto) { 
+    return nomeCompleto ? nomeCompleto.split(' ')[0] : 'Cliente'; 
+}
+
 function numeroPorExtenso(numero) {
     const unidades = ['', 'um', 'dois', 'três', 'quatro', 'cinco', 'seis', 'sete', 'oito', 'nove'];
     const dezA19 = ['dez', 'onze', 'doze', 'treze', 'quatorze', 'quinze', 'dezesseis', 'dezessete', 'dezoito', 'dezenove'];
@@ -50,6 +100,7 @@ function numeroPorExtenso(numero) {
     if (centavos > 0) extenso += ' e ' + converterCentena(centavos, centenas, dezenas, unidades, dezA19) + ' centavos';
     return extenso;
 }
+
 function converterCentena(num, centenas, dezenas, unidades, dezA19) {
     if (num === 0) return '';
     if (num === 100) return 'cem';
@@ -66,6 +117,7 @@ function converterCentena(num, centenas, dezenas, unidades, dezA19) {
     else if (resto > 0) resultado += unidades[resto];
     return resultado;
 }
+
 function calcularVencimentoParcela(dataBase, numeroParcela) {
     const data = new Date(dataBase);
     data.setMonth(data.getMonth() + (numeroParcela - 1));
@@ -112,7 +164,10 @@ function getNivelScore(pontos) {
     if (pontos >= 250) return { nome: "PRATA", cor: "nivel-prata", icone: "🥈", descricao: "Cliente Prata - Continue acumulando pontos!" };
     return { nome: "BRONZE", cor: "nivel-bronze", icone: "🥉", descricao: "Cliente Bronze - Realize serviços para ganhar pontos!" };
 }
-function calcularPorcentagemScore(pontos) { return (pontos / 1000) * 100; }
+
+function calcularPorcentagemScore(pontos) { 
+    return (pontos / 1000) * 100; 
+}
 
 function adicionarPontos(cpf, pontos, motivo) {
     if (!pontuacoes[cpf]) pontuacoes[cpf] = { pontos: 0, historico: [] };
@@ -188,7 +243,7 @@ function carregarSolicitacoesAdmin() {
     }
     
     if (solicitacoesPagamento.length === 0) {
-        tbody.innerHTML = '缘<td colspan="6" class="text-center text-muted">📭 Nenhuma solicitação de pagamento encontrada</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">📭 Nenhuma solicitação de pagamento encontrada</td></tr>';
         return;
     }
     
@@ -311,15 +366,21 @@ function converterValorPorExtenso() {
     const valor = parseFloat(document.getElementById('valor').value) || 0;
     document.getElementById('valorExtenso').value = numeroPorExtenso(valor).charAt(0).toUpperCase() + numeroPorExtenso(valor).slice(1);
 }
+
 function atualizarDataFormatada() {
     const data = document.getElementById('dataEmissao')?.value;
     if (data) document.getElementById('dataEmissaoFormatada').value = formatarDataExtenso(data);
 }
+
 function toggleParcelas() {
     const select = document.getElementById('quantidadeParcelas');
     const div = document.getElementById('parcelasContainer');
-    if (select && div) { div.style.display = select.value === '1' ? 'none' : 'block'; if (select.value !== '1') gerarCamposParcelas(); }
+    if (select && div) { 
+        div.style.display = select.value === '1' ? 'none' : 'block'; 
+        if (select.value !== '1') gerarCamposParcelas(); 
+    }
 }
+
 function gerarCamposParcelas() {
     const qtd = parseInt(document.getElementById('quantidadeParcelas').value);
     const total = parseFloat(document.getElementById('valor').value) || 0;
@@ -327,7 +388,7 @@ function gerarCamposParcelas() {
     const data = document.getElementById('dataEmissao').value;
     const container = document.getElementById('parcelasContainer');
     if (!container) return;
-    let html = '<h6 class="mt-3 mb-2">📋 Detalhes das Parcelas:</h6><div class="table-responsive"><table class="table table-sm table-bordered"><thead class="table-dark"><th>Nº</th><th>Valor (R$)</th><th>Data Vencimento</th></thead><tbody>';
+    let html = '<h6 class="mt-3 mb-2">📋 Detalhes das Parcelas:</h6><div class="table-responsive"><table class="table table-sm table-bordered"><thead class="table-dark"><tr><th>Nº</th><th>Valor (R$)</th><th>Data Vencimento</th></tr></thead><tbody>';
     for (let i = 1; i <= qtd; i++) {
         const venc = calcularVencimentoParcela(data, i);
         html += `<tr><td class="text-center">${i}ª</td><td class="text-center">R$ ${valorParcela.toFixed(2)}</td><td class="text-center">${formatarDataBR(venc)}</td></tr>`;
@@ -338,11 +399,20 @@ function gerarCamposParcelas() {
 
 document.getElementById('formDuplicata')?.addEventListener('submit', function(e) {
     e.preventDefault();
+    
     const qtd = parseInt(document.getElementById('quantidadeParcelas').value);
     const valorTotal = parseFloat(document.getElementById('valor').value);
     const valorParcela = valorTotal / qtd;
     const dataEmissao = document.getElementById('dataEmissao').value;
     const cpf = document.getElementById('cpfDevedor').value.replace(/\D/g, '');
+    const numDuplicata = document.getElementById('numDuplicata').value;
+    const numNF = document.getElementById('numNF').value;
+    
+    // Validar CPF/CNPJ
+    if (!validarCPFouCNPJ(cpf)) {
+        alert('⚠️ CPF/CNPJ inválido! Verifique o documento do cliente.');
+        return;
+    }
     
     // VALIDAÇÃO DE DATA
     const primeiraDataVencimento = calcularVencimentoParcela(dataEmissao, 1);
@@ -352,24 +422,39 @@ document.getElementById('formDuplicata')?.addEventListener('submit', function(e)
     }
     
     const devedorBase = {
-        nome: document.getElementById('nomeDevedor').value, cpf: cpf,
-        estado: document.getElementById('estado').value, rua: document.getElementById('ruaDevedor').value,
-        numero: document.getElementById('numeroDevedor').value, bairro: document.getElementById('bairroDevedor').value,
-        cidade: document.getElementById('cidade').value, cep: document.getElementById('cep').value,
+        nome: document.getElementById('nomeDevedor').value, 
+        cpf: cpf,
+        estado: document.getElementById('estado').value, 
+        rua: document.getElementById('ruaDevedor').value,
+        numero: document.getElementById('numeroDevedor').value, 
+        bairro: document.getElementById('bairroDevedor').value,
+        cidade: document.getElementById('cidade').value, 
+        cep: document.getElementById('cep').value,
         municipio: document.getElementById('municipio').value || document.getElementById('cidade').value,
         endereco: `${document.getElementById('ruaDevedor').value}, Nº ${document.getElementById('numeroDevedor').value} - ${document.getElementById('bairroDevedor').value}`
     };
+    
     const idOriginal = Date.now();
     for (let i = 1; i <= qtd; i++) {
         const venc = calcularVencimentoParcela(dataEmissao, i);
         duplicatas.push({
-            id: idOriginal + i, idOriginal: idOriginal, parcela: i, totalParcelas: qtd,
-            credor: configCredor, dataEmissao: dataEmissao, numNF: document.getElementById('numNF').value,
-            valor: valorParcela, valorTotal: valorTotal, numDuplicata: `${document.getElementById('numDuplicata').value || ''}-${i}`,
-            vencimento: venc, devedor: devedorBase,
+            id: idOriginal + i, 
+            idOriginal: idOriginal, 
+            parcela: i, 
+            totalParcelas: qtd,
+            credor: configCredor, 
+            dataEmissao: dataEmissao, 
+            numNF: numNF,
+            valor: valorParcela, 
+            valorTotal: valorTotal, 
+            numDuplicata: numDuplicata ? `${numDuplicata}-${i}` : `${i}/${qtd}`,
+            vencimento: venc, 
+            devedor: devedorBase,
             valorExtenso: numeroPorExtenso(valorParcela).charAt(0).toUpperCase() + numeroPorExtenso(valorParcela).slice(1),
             dataExtenso: document.getElementById('dataEmissaoFormatada').value, 
-            status: 'pendente', repm: '30', dataPagamento: null
+            status: 'pendente', 
+            repm: '30', 
+            dataPagamento: null
         });
     }
     localStorage.setItem('duplicatas', JSON.stringify(duplicatas));
@@ -382,9 +467,16 @@ function carregarTabelaClientes() {
     const tbody = document.getElementById('tabelaClientes');
     if (!tbody) return;
     tbody.innerHTML = '';
-    if (duplicatas.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="text-center">Nenhum cliente cadastrado</td></tr>'; return; }
+    if (duplicatas.length === 0) { 
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center">Nenhum cliente cadastrado</td></tr>'; 
+        return; 
+    }
     const clientesMap = new Map();
-    duplicatas.forEach(dup => { const cpf = dup.devedor.cpf; if (!clientesMap.has(cpf)) clientesMap.set(cpf, { devedor: dup.devedor, duplicatas: [] }); clientesMap.get(cpf).duplicatas.push(dup); });
+    duplicatas.forEach(dup => { 
+        const cpf = dup.devedor.cpf; 
+        if (!clientesMap.has(cpf)) clientesMap.set(cpf, { devedor: dup.devedor, duplicatas: [] }); 
+        clientesMap.get(cpf).duplicatas.push(dup); 
+    });
     let idx = 1;
     for (const [cpf, cliente] of clientesMap) {
         const totalValor = cliente.duplicatas.reduce((s, d) => s + parseFloat(d.valor), 0);
@@ -415,7 +507,7 @@ function verParcelas(cpf) {
     const parcelas = duplicatas.filter(d => d.devedor.cpf === cpf);
     if (parcelas.length === 0) return;
     const devedor = parcelas[0].devedor;
-    let modalHTML = `<div class="modal fade" id="modalParcelas" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header bg-warning"><h5 class="modal-title"><i class="bi bi-receipt"></i> Parcelas - ${devedor.nome}</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="table-responsive"><table class="table table-bordered"><thead class="table-dark"><th>Parcela</th><th>Valor</th><th>Vencimento</th><th>Status</th><th>Ações</th></thead><tbody>`;
+    let modalHTML = `<div class="modal fade" id="modalParcelas" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header bg-warning"><h5 class="modal-title"><i class="bi bi-receipt"></i> Parcelas - ${devedor.nome}</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="table-responsive"><table class="table table-bordered"><thead class="table-dark"><tr><th>Parcela</th><th>Valor</th><th>Vencimento</th><th>Status</th><th>Ações</th></tr></thead><tbody>`;
     parcelas.sort((a,b) => a.parcela - b.parcela).forEach(dup => {
         let statusClass = '', statusText = '';
         if (dup.status === 'pago') { statusClass = 'success'; statusText = 'PAGA'; }
@@ -445,7 +537,8 @@ function excluirCliente(cpf) {
     if (confirm('Tem certeza que deseja excluir TODAS as parcelas deste cliente?')) {
         duplicatas = duplicatas.filter(d => d.devedor.cpf !== cpf);
         localStorage.setItem('duplicatas', JSON.stringify(duplicatas));
-        carregarTabelaClientes(); atualizarEstatisticas();
+        carregarTabelaClientes(); 
+        atualizarEstatisticas();
         alert('Cliente excluído com sucesso!');
     }
 }
@@ -453,9 +546,16 @@ function excluirCliente(cpf) {
 // ===== FUNÇÕES FRANKSCORE (CLIENTE) =====
 function consultarScore() {
     const cpf = document.getElementById('cpfConsulta').value.replace(/\D/g, '');
-    if (!cpf || cpf.length < 11) { alert('Digite um CPF válido com 11 números'); return; }
+    if (!cpf || cpf.length < 11) { 
+        alert('Digite um CPF válido com 11 números'); 
+        return; 
+    }
     const cliente = duplicatas.find(d => d.devedor.cpf === cpf);
-    if (!cliente && !pontuacoes[cpf]) { document.getElementById('erroConsulta').style.display = 'block'; document.getElementById('resultadoScore').style.display = 'none'; return; }
+    if (!cliente && !pontuacoes[cpf]) { 
+        document.getElementById('erroConsulta').style.display = 'block'; 
+        document.getElementById('resultadoScore').style.display = 'none'; 
+        return; 
+    }
     document.getElementById('erroConsulta').style.display = 'none';
     document.getElementById('resultadoScore').style.display = 'block';
     
@@ -477,8 +577,9 @@ function consultarScore() {
     const tbodyParcelas = document.getElementById('tabelaParcelasCliente');
     tbodyParcelas.innerHTML = '';
     let temPendente = false;
-    if (parcelasCliente.length === 0) { tbodyParcelas.innerHTML = '<tr><td colspan="5" class="text-center">Nenhuma parcela encontrada</td></tr>'; }
-    else {
+    if (parcelasCliente.length === 0) { 
+        tbodyParcelas.innerHTML = '<tr><td colspan="5" class="text-center">Nenhuma parcela encontrada</td></tr>'; 
+    } else {
         parcelasCliente.sort((a,b) => a.parcela - b.parcela).forEach(p => {
             let statusClass = '', statusText = '';
             if (p.status === 'pago') { statusClass = 'status-pago'; statusText = 'PAGA'; }
@@ -519,7 +620,10 @@ function consultarScore() {
 }
 
 function irParaPagamento(cpf, parcelaId) {
-    if (cpf) { sessionStorage.setItem('clienteCpf', cpf); sessionStorage.setItem('parcelaId', parcelaId); }
+    if (cpf) { 
+        sessionStorage.setItem('clienteCpf', cpf); 
+        sessionStorage.setItem('parcelaId', parcelaId); 
+    }
     window.location.href = 'pagamento.html';
 }
 
@@ -528,13 +632,18 @@ function copiarChavePix() {
     navigator.clipboard.writeText(chave).then(() => alert('✅ Chave PIX copiada!\nCNPJ: ' + chave + '\n\n⚠️ Confirme os dados antes de pagar!'));
 }
 
-function voltar() { window.location.href = 'frankscore.html'; }
+function voltar() { 
+    window.location.href = 'frankscore.html'; 
+}
 
 // ===== FUNÇÕES ADMIN (PONTOS) =====
 function adicionarPontosAdmin(pontos, motivo) {
     const select = document.getElementById('selectClienteScore');
     const cpf = select.value;
-    if (!cpf) { alert('Selecione um cliente primeiro!'); return; }
+    if (!cpf) { 
+        alert('Selecione um cliente primeiro!'); 
+        return; 
+    }
     const novosPontos = adicionarPontos(cpf, pontos, motivo);
     const cliente = duplicatas.find(d => d.devedor.cpf === cpf);
     adicionarNotificacao(cpf, cliente?.devedor.nome || 'Cliente', 'Pontos Adicionados!', 
@@ -547,7 +656,10 @@ function adicionarPontosAdmin(pontos, motivo) {
 function removerPontosAdmin(pontos, motivo) {
     const select = document.getElementById('selectClienteScore');
     const cpf = select.value;
-    if (!cpf) { alert('Selecione um cliente primeiro!'); return; }
+    if (!cpf) { 
+        alert('Selecione um cliente primeiro!'); 
+        return; 
+    }
     const novosPontos = removerPontos(cpf, pontos, motivo);
     const cliente = duplicatas.find(d => d.devedor.cpf === cpf);
     adicionarNotificacao(cpf, cliente?.devedor.nome || 'Cliente', 'Pontos Removidos', 
@@ -560,7 +672,10 @@ function removerPontosAdmin(pontos, motivo) {
 function aplicarDescontoGoogle(percentual) {
     const select = document.getElementById('selectClienteScore');
     const cpf = select.value;
-    if (!cpf) { alert('Selecione um cliente primeiro!'); return; }
+    if (!cpf) { 
+        alert('Selecione um cliente primeiro!'); 
+        return; 
+    }
     const novosPontos = adicionarPontos(cpf, 20, 'Avaliação no Google');
     const cliente = duplicatas.find(d => d.devedor.cpf === cpf);
     adicionarNotificacao(cpf, cliente?.devedor.nome || 'Cliente', 'Avaliação no Google!', 
@@ -574,12 +689,17 @@ function carregarSelectClientes() {
     if (!select) return;
     select.innerHTML = '<option value="">Selecione um cliente</option>';
     const clientesMap = new Map();
-    duplicatas.forEach(dup => { const cpf = dup.devedor.cpf; if (!clientesMap.has(cpf)) clientesMap.set(cpf, { nome: dup.devedor.nome, cpf: cpf }); });
+    duplicatas.forEach(dup => { 
+        const cpf = dup.devedor.cpf; 
+        if (!clientesMap.has(cpf)) clientesMap.set(cpf, { nome: dup.devedor.nome, cpf: cpf }); 
+    });
     for (const [cpf, cliente] of clientesMap) {
         const pontos = pontuacoes[cpf] ? pontuacoes[cpf].pontos : 0;
         select.innerHTML += `<option value="${cpf}">${cliente.nome} - ${formatarCPF(cpf)} (${pontos} pts)</option>`;
     }
-    select.addEventListener('change', function() { if (this.value) atualizarExibicaoScore(this.value); });
+    select.addEventListener('change', function() { 
+        if (this.value) atualizarExibicaoScore(this.value); 
+    });
 }
 
 function atualizarExibicaoScore(cpf) {
@@ -597,13 +717,18 @@ function atualizarExibicaoScore(cpf) {
     }
 }
 
-// ===== FUNÇÃO IMPRIMIR DUPLICATA TOTAL =====
+// ===== FUNÇÃO IMPRIMIR DUPLICATA TOTAL (LAYOUT DA IMAGEM) =====
 function imprimirDuplicataTotal(cpf) {
     const parcelas = duplicatas.filter(d => d.devedor.cpf === cpf);
     if (parcelas.length === 0) return;
     const dup = parcelas[0];
     const valorTotal = dup.valorTotal;
     const dataEmissao = formatarDataBR(dup.dataEmissao);
+    const numNF = dup.numNF || '________';
+    const numDuplicata = dup.numDuplicata || `${dup.parcela}/${dup.totalParcelas}`;
+    const vencimentoPrimeira = formatarDataBR(dup.vencimento);
+    const valorTotalFormatado = parseFloat(valorTotal).toFixed(2);
+    const valorParcelaFormatado = parseFloat(dup.valor).toFixed(2);
     
     // VALIDAÇÃO DE DATA
     const dataVencimento = new Date(dup.vencimento);
@@ -614,88 +739,219 @@ function imprimirDuplicataTotal(cpf) {
     }
     
     const janela = window.open('', '_blank');
-    janela.document.write(`<html><head><title>Duplicata de Venda Mercantil</title><style>
-        @page { size: A4; margin: 1.5cm; }
-        body { font-family: 'Times New Roman', Times, serif; font-size: 12pt; }
-        .container { max-width: 800px; margin: auto; }
-        .titulo { text-align: center; font-size: 22pt; font-weight: bold; margin-bottom: 20px; }
-        .info-credor { border: 1px solid #000; padding: 10px; margin-bottom: 15px; }
-        .tabela { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
-        .tabela th, .tabela td { border: 1px solid #000; padding: 8px; }
-        .multa { background: #fff3cd; text-align: center; padding: 8px; border: 1px solid #000; margin-bottom: 15px; }
-        .sacado { border: 1px solid #000; padding: 10px; margin-bottom: 15px; }
-        .repm { border: 1px solid #000; padding: 5px; text-align: center; margin-bottom: 15px; }
-        .rodape { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 20px; text-align: center; }
-        .assinatura-dupla { display: flex; justify-content: space-between; margin-top: 40px; }
-        .assinatura-item { flex: 1; text-align: center; }
-        .linha { border-bottom: 1px solid #000; margin: 5px 0; height: 30px; }
-        .no-print { margin-top: 20px; text-align: center; }
-        @media print { .no-print { display: none; } }
-    </style></head>
-    <body>
-        <div class="container">
-            <div class="titulo">Duplicata de Venda Mercantil</div>
-            
-            <div class="info-credor">
-                <div><strong>${configCredor.nome} - ${configCredor.fantasia}</strong></div>
-                <div>${configCredor.endereco} - ${configCredor.bairro} | ${configCredor.cidade} - ${configCredor.uf}</div>
-                <div>C.N.P.J (MF) Nº ${configCredor.cnpj} | C.C.M Nº ${configCredor.ccm}</div>
-                <div>Mun. ${configCredor.cidade} - ${configCredor.uf} | DATA DA EMISSÃO: ${dataEmissao}</div>
-            </div>
-            
-            <table class="tabela">
-                <thead>
-                    <tr><th>NF FATURA N°</th><th>VALOR TOTAL</th><th>PARCELAS</th><th>Vencimento da 1ª</th></tr>
-                </thead>
-                <tbody>
-                    <tr><td class="text-center">${dup.numNF || '______'}</td>
-                        <td class="text-center">R$ ${parseFloat(valorTotal).toFixed(2)}</td>
-                        <td class="text-center">${dup.totalParcelas}x de R$ ${parseFloat(dup.valor).toFixed(2)}</td>
-                        <td class="text-center">${formatarDataBR(dup.vencimento)}</td>
-                    </tr>
-                </tbody>
-            </table>
-            
-            <div class="multa">⚠️ APÓS O VENCIMENTO: MULTA DE 2% + MORA DIÁRIA DE R$ 2,14 ⚠️</div>
-            
-            <div class="sacado">
-                <div><strong>NOME DO SACADO:</strong> ${dup.devedor.nome.toUpperCase()}</div>
-                <div><strong>ENDEREÇO:</strong> ${dup.devedor.rua.toUpperCase()}, Nº ${dup.devedor.numero} - ${dup.devedor.bairro.toUpperCase()}</div>
-                <div><strong>CEP:</strong> ${dup.devedor.cep || '______'} | <strong>MUNICÍPIO:</strong> ${dup.devedor.cidade.toUpperCase()}</div>
-                <div><strong>PRAÇA DE PAGAMENTO:</strong> ${dup.devedor.cidade.toUpperCase()} | <strong>CNPJ/CPF:</strong> ${formatarCPF(dup.devedor.cpf)}</div>
-                <div><strong>Insc. Est.:</strong> ISENTO</div>
-            </div>
-            
-            <div class="repm">REP.M: 30</div>
-            
-            <div class="rodape">
-                <div>VALOR POR EXTENSO<br>${numeroPorExtenso(valorTotal).toUpperCase()}</div>
-                <div>NOME DO CREDOR<br>${configCredor.nome.toUpperCase()}</div>
-                <div>PRAÇA DE PAGAMENTO<br>${dup.devedor.cidade.toUpperCase()}</div>
-            </div>
-            
-            <div class="assinatura-dupla">
-                <div class="assinatura-item">
-                    <div>_____/____/________</div>
-                    <div>(DATA DE ACEITE)</div>
-                </div>
-                <div class="assinatura-item">
-                    <div class="linha"></div>
-                    <div>ASSINATURA DO SACADO</div>
-                </div>
-            </div>
-            
-            <div class="no-print">
-                <button onclick="window.print()">🖨️ Imprimir</button>
-                <button onclick="window.close()">❌ Fechar</button>
-            </div>
+    janela.document.write(`<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Duplicata de Venda Mercantil - Frank Motos</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1.5cm;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 11pt;
+            background: #fff;
+            color: #000;
+        }
+        .duplicata {
+            max-width: 800px;
+            margin: 0 auto;
+            border: 1px solid #000;
+            padding: 15px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .credor-nome {
+            font-weight: bold;
+            font-size: 12pt;
+        }
+        .credor-endereco {
+            font-size: 10pt;
+        }
+        .titulo-duplicata {
+            text-align: center;
+            font-weight: bold;
+            font-size: 14pt;
+            margin: 10px 0;
+            letter-spacing: 2px;
+        }
+        .cnpj {
+            text-align: center;
+            font-size: 10pt;
+            margin-bottom: 15px;
+        }
+        .tabela-principal {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+            font-size: 10pt;
+        }
+        .tabela-principal th, .tabela-principal td {
+            border: 1px solid #000;
+            padding: 8px;
+            text-align: center;
+        }
+        .tabela-principal th {
+            background-color: #f5f5f5;
+            font-weight: bold;
+        }
+        .descontos {
+            margin-bottom: 15px;
+            font-size: 10pt;
+        }
+        .sacado {
+            margin-bottom: 15px;
+        }
+        .sacado-label {
+            font-weight: bold;
+        }
+        .tabela-endereco {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+            font-size: 10pt;
+        }
+        .tabela-endereco td {
+            border: 1px solid #000;
+            padding: 5px;
+        }
+        .reconhecimento {
+            margin: 20px 0;
+            text-align: justify;
+            font-size: 10pt;
+            line-height: 1.4;
+        }
+        .aceite {
+            margin-top: 30px;
+            text-align: center;
+        }
+        .linha-assinatura {
+            border-bottom: 1px solid #000;
+            width: 60%;
+            margin: 10px auto;
+            height: 30px;
+        }
+        .data-aceite {
+            font-size: 10pt;
+        }
+        .no-print {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .no-print button {
+            padding: 8px 20px;
+            margin: 0 5px;
+            cursor: pointer;
+            background: #ffc107;
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        @media print {
+            .no-print {
+                display: none;
+            }
+            .duplicata {
+                border: none;
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="duplicata">
+        <div class="header">
+            <div class="credor-nome">${configCredor.nome.toUpperCase()} - ${configCredor.fantasia}</div>
+            <div class="credor-endereco">${configCredor.endereco}</div>
+            <div class="credor-endereco">${configCredor.bairro.toUpperCase()}–${configCredor.cidade.toUpperCase()}–${configCredor.uf}</div>
+            <div class="credor-endereco">CEP ${configCredor.cep}</div>
         </div>
-    </body>
-    </html>`);
+        
+        <div class="titulo-duplicata">DUPLICATA</div>
+        <div class="cnpj">C.N.P.J ${configCredor.cnpj}</div>
+        
+        <table class="tabela-principal">
+            <thead>
+                <tr><th>Nota Fiscal</th>
+                    <th>Data de Emissão</th>
+                    <th>Duplicata</th>
+                    <th>Valor R$:</th>
+                    <th>Vencimento</th>
+                    <th>Para uso da Instituição Financeira</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>${numNF}</td>
+                    <td>${dataEmissao}</td>
+                    <td>${numDuplicata}</td>
+                    <td>${valorTotalFormatado}</td>
+                    <td>${vencimentoPrimeira}</td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <div class="descontos">
+            Descontos de ______ % sobre ______ Até ______ Condições Especiais __________________
+        </div>
+        
+        <div class="sacado">
+            <div><span class="sacado-label">Nome do Sacado:</span> ${dup.devedor.nome.toUpperCase()}</div>
+            <div><span class="sacado-label">Endereço de Cobrança</span></div>
+            <div>${dup.devedor.rua.toUpperCase()}, ${dup.devedor.numero} - ${dup.devedor.bairro.toUpperCase()}</div>
+        </div>
+        
+        <table class="tabela-endereco">
+            <tr>
+                <td><strong>Cidade</strong></td>
+                <td><strong>Estado</strong></td>
+                <td><strong>CEP</strong></td>
+                <td><strong>Telefone</strong></td>
+                <td><strong>Pagamento</strong></td>
+            </tr>
+            <tr>
+                <td>${dup.devedor.cidade.toUpperCase()}</td>
+                <td>${dup.devedor.estado.toUpperCase()}</td>
+                <td>${dup.devedor.cep || '________'}</td>
+                <td>${configCredor.contato}</td>
+                <td>${dup.devedor.cidade.toUpperCase()} ${dup.devedor.estado.toUpperCase()}</td>
+            </tr>
+            <tr>
+                <td colspan="2"><strong>CNPJ/CPF</strong><br>${formatarCPF(dup.devedor.cpf)}</td>
+                <td colspan="3"><strong>Inscrição Estadual</strong><br>Isento</td>
+            </tr>
+        </table>
+        
+        <div class="reconhecimento">
+            Reconhecemos a exatidão desta DUPLICATA DE VENDA MERCANTIL/PRESTAÇÃO DE SERVIÇOS na importância acima que pagaremos à ${configCredor.nome.toUpperCase()} ou à sua ordem na praça e vencimentos acima indicados.
+        </div>
+        
+        <div class="aceite">
+            <div>Em ______ / ______ / ______</div>
+            <div class="linha-assinatura"></div>
+            <div class="data-aceite">Data do Aceite &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Assinatura do Sacado</div>
+        </div>
+        
+        <div class="no-print">
+            <button onclick="window.print()">🖨️ IMPRIMIR</button>
+            <button onclick="window.close()">❌ FECHAR</button>
+        </div>
+    </div>
+</body>
+</html>`);
     janela.document.close();
 }
 
-// ===== FUNÇÃO IMPRIMIR CONTRATO TOTAL (VERSÃO BONITA E SEM TESTEMUNHAS) =====
+// ===== FUNÇÃO IMPRIMIR CONTRATO TOTAL =====
 function imprimirContratoTotal(cpf) {
     const parcelas = duplicatas.filter(d => d.devedor.cpf === cpf);
     if (parcelas.length === 0) return;
@@ -703,8 +959,9 @@ function imprimirContratoTotal(cpf) {
     const valorTotal = dup.valorTotal;
     const totalParcelas = dup.totalParcelas;
     const valorParcela = dup.valor;
+    const numNF = dup.numNF || '______';
+    const numDuplicata = dup.numDuplicata || `${dup.parcela}/${dup.totalParcelas}`;
     
-    // Data atual para o contrato
     const dataAtual = new Date();
     const meses = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
     const dataExtenso = `${dataAtual.getDate()} de ${meses[dataAtual.getMonth()]} de ${dataAtual.getFullYear()}`;
@@ -716,196 +973,35 @@ function imprimirContratoTotal(cpf) {
     <meta charset="UTF-8">
     <title>Contrato de Prestação de Serviços - Frank Motos</title>
     <style>
-        @page {
-            size: A4;
-            margin: 2.5cm;
-        }
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: 'Times New Roman', Times, serif;
-            font-size: 11pt;
-            line-height: 1.5;
-            color: #1a1a1a;
-            background: #fff;
-        }
-        .container {
-            max-width: 100%;
-            margin: 0 auto;
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-            border-bottom: 2px solid #ffc107;
-            padding-bottom: 15px;
-        }
-        .titulo-principal {
-            font-size: 18pt;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            color: #1a1a1a;
-            margin-bottom: 5px;
-        }
-        .subtitulo {
-            font-size: 12pt;
-            color: #555;
-            margin-top: 5px;
-        }
-        .numero-contrato {
-            text-align: right;
-            font-size: 10pt;
-            margin-bottom: 20px;
-            color: #666;
-        }
-        .partes {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border-left: 5px solid #ffc107;
-            padding: 15px;
-            margin-bottom: 25px;
-            border-radius: 8px;
-        }
-        .partes h3 {
-            font-size: 13pt;
-            margin-bottom: 12px;
-            color: #1a1a1a;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        .partes p {
-            margin-bottom: 8px;
-        }
-        .partes strong {
-            color: #1a1a1a;
-        }
-        .clausula {
-            margin-bottom: 18px;
-            text-align: justify;
-        }
-        .clausula-titulo {
-            font-weight: bold;
-            text-transform: uppercase;
-            font-size: 11pt;
-            margin-bottom: 8px;
-            color: #1a1a1a;
-            background: #fff8e1;
-            padding: 5px 8px;
-            border-left: 4px solid #ffc107;
-        }
-        .valor-destaque {
-            background: linear-gradient(135deg, #ffc107 0%, #ff8c00 100%);
-            color: #1a1a1a;
-            padding: 15px;
-            text-align: center;
-            border-radius: 12px;
-            margin: 20px 0;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-        .valor-destaque .label {
-            font-size: 11pt;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            opacity: 0.8;
-        }
-        .valor-destaque .valor {
-            font-size: 24pt;
-            font-weight: bold;
-            margin: 5px 0;
-        }
-        .valor-destaque .parcelas {
-            font-size: 14pt;
-            font-weight: bold;
-        }
-        .valor-destaque .extenso {
-            font-size: 10pt;
-            font-style: italic;
-            margin-top: 8px;
-            opacity: 0.9;
-        }
-        .multa-destaque {
-            background: #fff3cd;
-            border: 2px solid #ffc107;
-            border-radius: 10px;
-            padding: 12px;
-            text-align: center;
-            margin: 20px 0;
-            font-weight: bold;
-            color: #856404;
-        }
-        .info-adicional {
-            background: #f0f7ff;
-            border-left: 4px solid #ffc107;
-            padding: 12px;
-            margin: 20px 0;
-            border-radius: 8px;
-            font-size: 10pt;
-        }
-        .assinaturas {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 50px;
-            gap: 50px;
-        }
-        .assinatura {
-            flex: 1;
-            text-align: center;
-        }
-        .linha-assinatura {
-            border-bottom: 1px solid #000;
-            margin: 10px 0;
-            height: 40px;
-        }
-        .data-local {
-            text-align: right;
-            margin: 25px 0;
-            font-style: italic;
-            color: #555;
-        }
-        .rodape {
-            margin-top: 35px;
-            text-align: center;
-            font-size: 9pt;
-            border-top: 1px solid #ddd;
-            padding-top: 12px;
-            color: #888;
-        }
-        .no-print {
-            text-align: center;
-            margin-top: 25px;
-            padding: 12px;
-            background: #f8f9fa;
-            border-radius: 8px;
-        }
-        .no-print button {
-            padding: 10px 25px;
-            margin: 0 8px;
-            cursor: pointer;
-            background: #ffc107;
-            border: none;
-            border-radius: 25px;
-            font-weight: bold;
-            transition: all 0.3s;
-        }
-        .no-print button:hover {
-            background: #e0a800;
-            transform: scale(1.02);
-        }
-        @media print {
-            .no-print {
-                display: none;
-            }
-            body {
-                margin: 0;
-                padding: 0;
-            }
-            .multa-destaque, .valor-destaque, .partes {
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-            }
-        }
+        @page { size: A4; margin: 2.5cm; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Times New Roman', Times, serif; font-size: 11pt; line-height: 1.5; color: #1a1a1a; background: #fff; }
+        .container { max-width: 100%; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #ffc107; padding-bottom: 15px; }
+        .titulo-principal { font-size: 18pt; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; }
+        .subtitulo { font-size: 12pt; color: #555; margin-top: 5px; }
+        .numero-contrato { text-align: right; font-size: 10pt; margin-bottom: 20px; color: #666; }
+        .partes { background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-left: 5px solid #ffc107; padding: 15px; margin-bottom: 25px; border-radius: 8px; }
+        .partes h3 { font-size: 13pt; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; }
+        .partes p { margin-bottom: 8px; }
+        .clausula { margin-bottom: 18px; text-align: justify; }
+        .clausula-titulo { font-weight: bold; text-transform: uppercase; font-size: 11pt; margin-bottom: 8px; background: #fff8e1; padding: 5px 8px; border-left: 4px solid #ffc107; }
+        .valor-destaque { background: linear-gradient(135deg, #ffc107 0%, #ff8c00 100%); padding: 15px; text-align: center; border-radius: 12px; margin: 20px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .valor-destaque .label { font-size: 11pt; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8; }
+        .valor-destaque .valor { font-size: 24pt; font-weight: bold; margin: 5px 0; }
+        .valor-destaque .parcelas { font-size: 14pt; font-weight: bold; }
+        .valor-destaque .extenso { font-size: 10pt; font-style: italic; margin-top: 8px; opacity: 0.9; }
+        .multa-destaque { background: #fff3cd; border: 2px solid #ffc107; border-radius: 10px; padding: 12px; text-align: center; margin: 20px 0; font-weight: bold; color: #856404; }
+        .info-adicional { background: #f0f7ff; border-left: 4px solid #ffc107; padding: 12px; margin: 20px 0; border-radius: 8px; font-size: 10pt; }
+        .assinaturas { display: flex; justify-content: space-between; margin-top: 50px; gap: 50px; }
+        .assinatura { flex: 1; text-align: center; }
+        .linha-assinatura { border-bottom: 1px solid #000; margin: 10px 0; height: 40px; }
+        .data-local { text-align: right; margin: 25px 0; font-style: italic; color: #555; }
+        .rodape { margin-top: 35px; text-align: center; font-size: 9pt; border-top: 1px solid #ddd; padding-top: 12px; color: #888; }
+        .no-print { text-align: center; margin-top: 25px; padding: 12px; background: #f8f9fa; border-radius: 8px; }
+        .no-print button { padding: 10px 25px; margin: 0 8px; cursor: pointer; background: #ffc107; border: none; border-radius: 25px; font-weight: bold; transition: all 0.3s; }
+        .no-print button:hover { background: #e0a800; transform: scale(1.02); }
+        @media print { .no-print { display: none; } .multa-destaque, .valor-destaque, .partes { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
     </style>
 </head>
 <body>
@@ -914,7 +1010,7 @@ function imprimirContratoTotal(cpf) {
             <div class="titulo-principal">CONTRATO DE PRESTAÇÃO DE SERVIÇOS</div>
             <div class="subtitulo">FRANK MOTOS - OFICINA ESPECIALIZADA EM MOTOCICLETAS</div>
         </div>
-        <div class="numero-contrato">Contrato nº: ${dup.numNF || dup.id.toString().slice(-8)}/2026</div>
+        <div class="numero-contrato">Contrato nº: ${numNF || numDuplicata}/2026</div>
         
         <div class="partes">
             <h3>📋 PARTES CONTRATANTES</h3>
@@ -942,7 +1038,7 @@ function imprimirContratoTotal(cpf) {
         
         <div class="clausula">
             <div class="clausula-titulo">CLÁUSULA PRIMEIRA - DO OBJETO</div>
-            <p>O presente contrato tem como objeto a prestação de serviços de oficina mecânica especializada em motocicletas, incluindo reparos, manutenção preventiva e corretiva, substituição de peças, e demais serviços correlatos, conforme Nota Fiscal nº ${dup.numNF || '______'}, emitida em ${formatarDataBR(dup.dataEmissao)}.</p>
+            <p>O presente contrato tem como objeto a prestação de serviços de oficina mecânica especializada em motocicletas, incluindo reparos, manutenção preventiva e corretiva, substituição de peças, e demais serviços correlatos, conforme Nota Fiscal nº ${numNF}, emitida em ${formatarDataBR(dup.dataEmissao)}.</p>
         </div>
         
         <div class="clausula">
@@ -1023,20 +1119,76 @@ function imprimirContratoTotal(cpf) {
 function imprimirDuplicata(id) {
     const dup = duplicatas.find(d => d.id === id);
     if (!dup) return;
+    
     const janela = window.open('', '_blank');
-    janela.document.write(`<html><head><title>Duplicata</title><style>@page{size:A4;margin:1.5cm}body{font-family:monospace}.container{max-width:800px;margin:auto}.titulo{text-align:center;font-size:28px}.info-credor{border:1px solid #000;padding:10px}.tabela{width:100%;border-collapse:collapse}.tabela th,.tabela td{border:1px solid #000;padding:8px}.multa{background:#fff3cd;text-align:center;padding:8px}.sacado{border:1px solid #000;padding:10px}.assinatura-dupla{display:flex;justify-content:space-between;margin-top:40px}.assinatura-item{flex:1;text-align:center}.linha{border-bottom:1px solid #000;margin:5px 0}</style></head>
-    <body><div class="container"><div class="titulo">Duplicata</div><div class="info-parcela">📄 ${dup.parcela}ª PARCELA de ${dup.totalParcelas} 📄</div>
-    <div class="info-credor"><div><strong>${configCredor.nome} - ${configCredor.fantasia}</strong></div><div>${configCredor.endereco} - ${configCredor.bairro} | ${configCredor.cidade} - ${configCredor.uf}</div>
-    <div>C.N.P.J (MF) Nº ${configCredor.cnpj} | C.C.M Nº ${configCredor.ccm}</div><div>Mun. ${configCredor.cidade} - ${configCredor.uf} | DATA DA EMISSÃO: ${formatarDataBR(dup.dataEmissao)}</div></div>
-    <table class="tabela"><tr><th>NF FATURA N°</th><th>Valor</th><th>Duplicação</th><th>Vencimento</th></tr><tr><td class="text-center">${dup.numNF || '______'}</td><td class="text-center">R$ ${parseFloat(dup.valor).toFixed(2)}</td><td class="text-center">${dup.numDuplicata || `${dup.parcela}/${dup.totalParcelas}`}</td><td class="text-center">${formatarDataBR(dup.vencimento)}</td></tr></table>
-    <div class="multa">⚠️ APÓS O VENCIMENTO: MULTA DE 2% + MORA DIÁRIA DE R$ 2,14 ⚠️</div>
-    <div class="sacado"><div><strong>NOME DO SACADO:</strong> ${dup.devedor.nome.toUpperCase()}</div><div><strong>ENDEREÇO:</strong> ${dup.devedor.rua.toUpperCase()}, Nº ${dup.devedor.numero} - ${dup.devedor.bairro.toUpperCase()}</div>
-    <div><strong>CEP:</strong> ${dup.devedor.cep || '______'} | <strong>MUNICÍPIO:</strong> ${dup.devedor.cidade.toUpperCase()}</div>
-    <div><strong>PRAÇA DE PAGAMENTO:</strong> ${dup.devedor.cidade.toUpperCase()} | <strong>CNPJ/CPF:</strong> ${formatarCPF(dup.devedor.cpf)}</div><div><strong>Insc. Est.:</strong> ISENTO</div></div>
-    <div class="repm">REP.M: 30</div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);margin-top:20px;"><div>VALOR POR EXTENSO<br>${dup.valorExtenso.toUpperCase()}</div><div>NOME DO CREDOR<br>${configCredor.nome.toUpperCase()}</div><div>PRAÇA DE PAGAMENTO<br>${dup.devedor.cidade.toUpperCase()}</div></div>
-    <div class="assinatura-dupla"><div class="assinatura-item"><div>_____/____/________</div><div>(DATA DE ACEITE)</div></div><div class="assinatura-item"><div class="linha"></div><div>ASSINATURA DO SACADO</div></div></div>
-    <div class="no-print" style="margin-top:20px;"><button onclick="window.print()">Imprimir</button> <button onclick="window.close()">Fechar</button></div></div></body></html>`);
+    janela.document.write(`<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Duplicata - Frank Motos</title>
+    <style>
+        @page { size: A4; margin: 1.5cm; }
+        body { font-family: 'Courier New', Courier, monospace; font-size: 11pt; }
+        .duplicata { max-width: 800px; margin: 0 auto; border: 1px solid #000; padding: 15px; }
+        .header { text-align: center; margin-bottom: 15px; }
+        .titulo-duplicata { text-align: center; font-weight: bold; font-size: 14pt; margin: 10px 0; }
+        .tabela { width: 100%; border-collapse: collapse; margin: 10px 0; }
+        .tabela th, .tabela td { border: 1px solid #000; padding: 5px; text-align: center; }
+        .sacado { margin: 15px 0; }
+        .reconhecimento { margin: 20px 0; text-align: justify; }
+        .assinatura { text-align: center; margin-top: 30px; }
+        .linha { border-bottom: 1px solid #000; width: 60%; margin: 10px auto; height: 30px; }
+        .no-print { text-align: center; margin-top: 20px; }
+        .no-print button { padding: 8px 20px; margin: 0 5px; background: #ffc107; border: none; border-radius: 5px; cursor: pointer; }
+        @media print { .no-print { display: none; } }
+    </style>
+</head>
+<body>
+    <div class="duplicata">
+        <div class="header">
+            <div><strong>${configCredor.nome} - ${configCredor.fantasia}</strong></div>
+            <div>${configCredor.endereco} - ${configCredor.bairro}</div>
+            <div>${configCredor.cidade} - ${configCredor.uf} | CEP: ${configCredor.cep}</div>
+        </div>
+        <div class="titulo-duplicata">DUPLICATA</div>
+        <div>CNPJ: ${configCredor.cnpj}</div>
+        
+        <table class="tabela">
+            <tr>
+                <th>Nota Fiscal</th><th>Data Emissão</th><th>Duplicata</th><th>Valor R$</th><th>Vencimento</th>
+            </tr>
+            <tr>
+                <td>${dup.numNF || '________'}</td>
+                <td>${formatarDataBR(dup.dataEmissao)}</td>
+                <td>${dup.numDuplicata || `${dup.parcela}/${dup.totalParcelas}`}</td>
+                <td>${parseFloat(dup.valor).toFixed(2)}</td>
+                <td>${formatarDataBR(dup.vencimento)}</td>
+            </tr>
+        </table>
+        
+        <div class="sacado">
+            <div><strong>Nome do Sacado:</strong> ${dup.devedor.nome.toUpperCase()}</div>
+            <div><strong>Endereço:</strong> ${dup.devedor.rua}, ${dup.devedor.numero} - ${dup.devedor.bairro}</div>
+            <div><strong>CPF/CNPJ:</strong> ${formatarCPF(dup.devedor.cpf)}</div>
+        </div>
+        
+        <div class="reconhecimento">
+            Reconhecemos a exatidão desta DUPLICATA DE VENDA MERCANTIL/PRESTAÇÃO DE SERVIÇOS na importância acima que pagaremos à ${configCredor.nome} ou à sua ordem na praça e vencimentos acima indicados.
+        </div>
+        
+        <div class="assinatura">
+            <div>Em ______ / ______ / ______</div>
+            <div class="linha"></div>
+            <div>Data do Aceite &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Assinatura do Sacado</div>
+        </div>
+        
+        <div class="no-print">
+            <button onclick="window.print()">🖨️ IMPRIMIR</button>
+            <button onclick="window.close()">❌ FECHAR</button>
+        </div>
+    </div>
+</body>
+</html>`);
     janela.document.close();
 }
 
@@ -1045,7 +1197,13 @@ function carregarChecklistClientes() {
     if (!tbody) return;
     tbody.innerHTML = '';
     const clientesMap = new Map();
-    duplicatas.forEach(dup => { const cpf = dup.devedor.cpf; if (!clientesMap.has(cpf)) clientesMap.set(cpf, { devedor: dup.devedor, duplicatas: [], dataCadastro: dup.dataEmissao, valorTotal: 0 }); const c = clientesMap.get(cpf); c.duplicatas.push(dup); c.valorTotal += parseFloat(dup.valor); });
+    duplicatas.forEach(dup => { 
+        const cpf = dup.devedor.cpf; 
+        if (!clientesMap.has(cpf)) clientesMap.set(cpf, { devedor: dup.devedor, duplicatas: [], dataCadastro: dup.dataEmissao, valorTotal: 0 }); 
+        const c = clientesMap.get(cpf); 
+        c.duplicatas.push(dup); 
+        c.valorTotal += parseFloat(dup.valor); 
+    });
     let idx = 1;
     for (const [cpf, cliente] of clientesMap) {
         const pontos = pontuacoes[cpf] ? pontuacoes[cpf].pontos : 0;
@@ -1053,103 +1211,301 @@ function carregarChecklistClientes() {
         const totalServicos = cliente.duplicatas.length;
         const statusGeral = cliente.duplicatas.every(d => d.status === 'pago') ? '✅ Regular' : '⚠️ Pendente';
         const row = tbody.insertRow();
-        row.innerHTML = `<td class="text-center">${idx}</td>}<td><strong>${cliente.devedor.nome}</strong></td><td>${formatarCPF(cpf)}</td><td class="text-center">${pontos}</td><td class="text-center"><span class="badge ${nivel.cor.replace('nivel-', 'bg-')}">${nivel.nome}</span></td><td class="text-center">${formatarDataBR(cliente.dataCadastro)}</td><td class="text-center">${totalServicos}</td><td class="text-center">R$ ${cliente.valorTotal.toFixed(2)}</td><td class="${cliente.duplicatas.every(d => d.status === 'pago') ? 'text-success' : 'text-danger'}">${statusGeral}</td>`;
+        row.innerHTML = `<td class="text-center">${idx}</td>
+                         <td><strong>${cliente.devedor.nome}</strong></td>
+                         <td>${formatarCPF(cpf)}</td>
+                         <td class="text-center">${pontos}</td>
+                         <td class="text-center"><span class="badge ${nivel.cor.replace('nivel-', 'bg-')}">${nivel.nome}</span></td>
+                         <td class="text-center">${formatarDataBR(cliente.dataCadastro)}</td>
+                         <td class="text-center">${totalServicos}</td>
+                         <td class="text-center">R$ ${cliente.valorTotal.toFixed(2)}</td>
+                         <td class="${cliente.duplicatas.every(d => d.status === 'pago') ? 'text-success' : 'text-danger'}">${statusGeral}</td>`;
         idx++;
     }
 }
 
 // ===== FUNÇÕES DE BACKUP =====
-function escapeXML(t) { if (!t) return ''; return t.toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;'); }
-function getXMLValue(p, t) { const e = p.getElementsByTagName(t)[0]; return e ? e.textContent : ''; }
+function escapeXML(t) { 
+    if (!t) return ''; 
+    return t.toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;'); 
+}
+
+function getXMLValue(p, t) { 
+    const e = p.getElementsByTagName(t)[0]; 
+    return e ? e.textContent : ''; 
+}
+
 function exportarXML() {
     try {
         let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<frank_motos_backup>\n  <data_backup>' + new Date().toLocaleString('pt-BR') + '</data_backup>\n  <versao>3.0</versao>\n  <credor>\n';
-        for (let k of ['nome','fantasia','cnpj','ie','ccm','contato','endereco','bairro','cidade','uf','cep']) xml += `    <${k}>${escapeXML(configCredor[k])}</${k}>\n`;
+        for (let k of ['nome','fantasia','cnpj','ie','ccm','contato','endereco','bairro','cidade','uf','cep']) 
+            xml += `    <${k}>${escapeXML(configCredor[k])}</${k}>\n`;
         xml += '  </credor>\n  <duplicatas>\n';
-        duplicatas.forEach((d,i) => { xml += `    <duplicata id="${d.id}">\n      <indice>${i+1}</indice>\n      <id_original>${d.idOriginal||d.id}</id_original>\n      <parcela>${d.parcela||1}</parcela>\n      <total_parcelas>${d.totalParcelas||1}</total_parcelas>\n      <data_emissao>${d.dataEmissao}</data_emissao>\n      <num_nf>${escapeXML(d.numNF||'')}</num_nf>\n      <valor>${d.valor}</valor>\n      <valor_total>${d.valorTotal||d.valor}</valor_total>\n      <num_duplicata>${escapeXML(d.numDuplicata||'')}</num_duplicata>\n      <vencimento>${d.vencimento}</vencimento>\n      <status>${d.status}</status>\n      <valor_extenso>${escapeXML(d.valorExtenso||'')}</valor_extenso>\n      <data_pagamento>${d.dataPagamento||''}</data_pagamento>\n      <repm>${d.repm||'30'}</repm>\n      <devedor>\n`;
-        for (let k of ['nome','cpf','estado','rua','numero','bairro','cidade','cep','municipio']) xml += `        <${k}>${escapeXML(d.devedor[k]||'')}</${k}>\n`;
-        xml += '      </devedor>\n    </duplicata>\n'; });
+        duplicatas.forEach((d,i) => { 
+            xml += `    <duplicata id="${d.id}">\n      <indice>${i+1}</indice>\n      <id_original>${d.idOriginal||d.id}</id_original>\n      <parcela>${d.parcela||1}</parcela>\n      <total_parcelas>${d.totalParcelas||1}</total_parcelas>\n      <data_emissao>${d.dataEmissao}</data_emissao>\n      <num_nf>${escapeXML(d.numNF||'')}</num_nf>\n      <valor>${d.valor}</valor>\n      <valor_total>${d.valorTotal||d.valor}</valor_total>\n      <num_duplicata>${escapeXML(d.numDuplicata||'')}</num_duplicata>\n      <vencimento>${d.vencimento}</vencimento>\n      <status>${d.status}</status>\n      <valor_extenso>${escapeXML(d.valorExtenso||'')}</valor_extenso>\n      <data_pagamento>${d.dataPagamento||''}</data_pagamento>\n      <repm>${d.repm||'30'}</repm>\n      <devedor>\n`;
+            for (let k of ['nome','cpf','estado','rua','numero','bairro','cidade','cep','municipio']) 
+                xml += `        <${k}>${escapeXML(d.devedor[k]||'')}</${k}>\n`;
+            xml += '      </devedor>\n    </duplicata>\n'; 
+        });
         xml += '  </duplicatas>\n  <pontuacoes>\n';
-        for (let [cpf, data] of Object.entries(pontuacoes)) { xml += `    <cliente cpf="${cpf}"><pontos>${data.pontos}</pontos><historico>\n`; if(data.historico) data.historico.forEach(h=>{ xml += `      <item><data>${h.data}</data><pontos>${h.pontos}</pontos><motivo>${escapeXML(h.motivo)}</motivo></item>\n`; }); xml += `    </historico></cliente>\n`; }
+        for (let [cpf, data] of Object.entries(pontuacoes)) { 
+            xml += `    <cliente cpf="${cpf}"><pontos>${data.pontos}</pontos><historico>\n`; 
+            if(data.historico) data.historico.forEach(h=>{ 
+                xml += `      <item><data>${h.data}</data><pontos>${h.pontos}</pontos><motivo>${escapeXML(h.motivo)}</motivo></item>\n`; 
+            }); 
+            xml += `    </historico></cliente>\n`; 
+        }
         xml += '  </pontuacoes>\n  <solicitacoes>\n';
-        solicitacoesPagamento.forEach(s=>{ xml += `    <solicitacao id="${s.id}"><parcela_id>${s.parcelaId}</parcela_id><cpf>${s.cpf}</cpf><status>${s.status}</status><data>${s.dataSolicitacao}</data></solicitacao>\n`; });
+        solicitacoesPagamento.forEach(s=>{ 
+            xml += `    <solicitacao id="${s.id}"><parcela_id>${s.parcelaId}</parcela_id><cpf>${s.cpf}</cpf><status>${s.status}</status><data>${s.dataSolicitacao}</data></solicitacao>\n`; 
+        });
         xml += '  </solicitacoes>\n</frank_motos_backup>';
         const blob = new Blob([xml], {type:'application/xml'}), url=URL.createObjectURL(blob), a=document.createElement('a');
-        a.href=url; a.download=`frank_motos_backup_${new Date().toISOString().slice(0,10)}.xml`; a.click(); alert('Backup exportado!');
-    } catch(e) { alert('Erro: '+e.message); }
+        a.href=url; a.download=`frank_motos_backup_${new Date().toISOString().slice(0,10)}.xml`; a.click(); 
+        alert('Backup exportado!');
+    } catch(e) { 
+        alert('Erro: '+e.message); 
+    }
 }
+
 function importarXML() {
-    const input=document.createElement('input'); input.type='file'; input.accept='.xml';
-    input.onchange=e=>{const file=e.target.files[0], reader=new FileReader();
-    reader.onload=ev=>{try{
-        const xml=new DOMParser().parseFromString(ev.target.result,'text/xml'), root=xml.documentElement;
-        if(root.nodeName!=='frank_motos_backup') throw new Error('Arquivo inválido');
-        const credorNode=xml.getElementsByTagName('credor')[0];
-        if(credorNode) for(let k of ['nome','fantasia','cnpj','ie','ccm','contato','endereco','bairro','cidade','uf','cep']) configCredor[k]=getXMLValue(credorNode,k)||configCredor[k];
-        const novas=[], nodes=xml.getElementsByTagName('duplicata');
-        for(let i=0;i<nodes.length;i++){ const dup=nodes[i], dev=dup.getElementsByTagName('devedor')[0];
-            if(dev){ const d={id:parseInt(dup.getAttribute('id'))||Date.now()+i, idOriginal:parseInt(getXMLValue(dup,'id_original'))||Date.now(), parcela:parseInt(getXMLValue(dup,'parcela'))||1, totalParcelas:parseInt(getXMLValue(dup,'total_parcelas'))||1, dataEmissao:getXMLValue(dup,'data_emissao')||'', numNF:getXMLValue(dup,'num_nf')||'', valor:parseFloat(getXMLValue(dup,'valor'))||0, valorTotal:parseFloat(getXMLValue(dup,'valor_total'))||0, numDuplicata:getXMLValue(dup,'num_duplicata')||'', vencimento:getXMLValue(dup,'vencimento')||'', status:getXMLValue(dup,'status')||'pendente', valorExtenso:getXMLValue(dup,'valor_extenso')||'', dataPagamento:getXMLValue(dup,'data_pagamento')||null, repm:getXMLValue(dup,'repm')||'30', devedor:{}};
-                for(let k of ['nome','cpf','estado','rua','numero','bairro','cidade','cep','municipio']) d.devedor[k]=getXMLValue(dev,k)||'';
-                d.devedor.endereco=`${d.devedor.rua}, Nº ${d.devedor.numero} - ${d.devedor.bairro}`;
-                if(!d.valorExtenso&&d.valor) d.valorExtenso=numeroPorExtenso(d.valor).charAt(0).toUpperCase()+numeroPorExtenso(d.valor).slice(1);
-                if(d.dataEmissao) d.dataExtenso=formatarDataExtenso(d.dataEmissao);
-                d.credor=configCredor; novas.push(d);
+    const input=document.createElement('input'); 
+    input.type='file'; 
+    input.accept='.xml';
+    input.onchange=e=>{
+        const file=e.target.files[0], reader=new FileReader();
+        reader.onload=ev=>{
+            try{
+                const xml=new DOMParser().parseFromString(ev.target.result,'text/xml'), root=xml.documentElement;
+                if(root.nodeName!=='frank_motos_backup') throw new Error('Arquivo inválido');
+                const credorNode=xml.getElementsByTagName('credor')[0];
+                if(credorNode) for(let k of ['nome','fantasia','cnpj','ie','ccm','contato','endereco','bairro','cidade','uf','cep']) 
+                    configCredor[k]=getXMLValue(credorNode,k)||configCredor[k];
+                const novas=[], nodes=xml.getElementsByTagName('duplicata');
+                for(let i=0;i<nodes.length;i++){ 
+                    const dup=nodes[i], dev=dup.getElementsByTagName('devedor')[0];
+                    if(dev){ 
+                        const d={
+                            id:parseInt(dup.getAttribute('id'))||Date.now()+i, 
+                            idOriginal:parseInt(getXMLValue(dup,'id_original'))||Date.now(), 
+                            parcela:parseInt(getXMLValue(dup,'parcela'))||1, 
+                            totalParcelas:parseInt(getXMLValue(dup,'total_parcelas'))||1, 
+                            dataEmissao:getXMLValue(dup,'data_emissao')||'', 
+                            numNF:getXMLValue(dup,'num_nf')||'', 
+                            valor:parseFloat(getXMLValue(dup,'valor'))||0, 
+                            valorTotal:parseFloat(getXMLValue(dup,'valor_total'))||0, 
+                            numDuplicata:getXMLValue(dup,'num_duplicata')||'', 
+                            vencimento:getXMLValue(dup,'vencimento')||'', 
+                            status:getXMLValue(dup,'status')||'pendente', 
+                            valorExtenso:getXMLValue(dup,'valor_extenso')||'', 
+                            dataPagamento:getXMLValue(dup,'data_pagamento')||null, 
+                            repm:getXMLValue(dup,'repm')||'30', 
+                            devedor:{}
+                        };
+                        for(let k of ['nome','cpf','estado','rua','numero','bairro','cidade','cep','municipio']) 
+                            d.devedor[k]=getXMLValue(dev,k)||'';
+                        d.devedor.endereco=`${d.devedor.rua}, Nº ${d.devedor.numero} - ${d.devedor.bairro}`;
+                        if(!d.valorExtenso&&d.valor) 
+                            d.valorExtenso=numeroPorExtenso(d.valor).charAt(0).toUpperCase()+numeroPorExtenso(d.valor).slice(1);
+                        if(d.dataEmissao) d.dataExtenso=formatarDataExtenso(d.dataEmissao);
+                        d.credor=configCredor; 
+                        novas.push(d);
+                    }
+                }
+                if(novas.length){ 
+                    duplicatas=novas; 
+                    localStorage.setItem('duplicatas',JSON.stringify(duplicatas)); 
+                }
+                const pontosNodes=xml.getElementsByTagName('cliente');
+                const novasPontuacoes = {};
+                for(let i=0;i<pontosNodes.length;i++){ 
+                    const c=pontosNodes[i]; 
+                    const cpf=c.getAttribute('cpf'); 
+                    if(cpf){ 
+                        const pontos=parseInt(getXMLValue(c,'pontos'))||0; 
+                        const historico=[]; 
+                        const itens=c.getElementsByTagName('item'); 
+                        for(let j=0;j<itens.length;j++){ 
+                            historico.push({
+                                data:getXMLValue(itens[j],'data'),
+                                pontos:parseInt(getXMLValue(itens[j],'pontos')),
+                                motivo:getXMLValue(itens[j],'motivo'),
+                                totalAtual:0
+                            }); 
+                        } 
+                        novasPontuacoes[cpf]={pontos:pontos,historico:historico}; 
+                    } 
+                }
+                pontuacoes = novasPontuacoes;
+                const solicitacoesNodes=xml.getElementsByTagName('solicitacao');
+                const novasSolicitacoes = [];
+                for(let i=0;i<solicitacoesNodes.length;i++){ 
+                    const s=solicitacoesNodes[i]; 
+                    novasSolicitacoes.push({
+                        id:parseInt(getXMLValue(s,'id')),
+                        parcelaId:parseInt(getXMLValue(s,'parcela_id')),
+                        cpf:getXMLValue(s,'cpf'),
+                        status:getXMLValue(s,'status'),
+                        dataSolicitacao:getXMLValue(s,'data')
+                    }); 
+                }
+                solicitacoesPagamento = novasSolicitacoes;
+                localStorage.setItem('duplicatas',JSON.stringify(duplicatas));
+                localStorage.setItem('configCredor',JSON.stringify(configCredor));
+                localStorage.setItem('pontuacoes',JSON.stringify(pontuacoes));
+                localStorage.setItem('solicitacoesPagamento',JSON.stringify(solicitacoesPagamento));
+                carregarTabelaClientes(); 
+                atualizarEstatisticas(); 
+                carregarConfigAdmin(); 
+                carregarSelectClientes(); 
+                carregarSolicitacoesAdmin();
+                alert(`Importado! ${novas.length} parcelas.`);
+            }catch(e){ 
+                alert('Erro: '+e.message); 
             }
-        }
-        if(novas.length){ duplicatas=novas; localStorage.setItem('duplicatas',JSON.stringify(duplicatas)); }
-        const pontosNodes=xml.getElementsByTagName('cliente');
-        const novasPontuacoes = {};
-        for(let i=0;i<pontosNodes.length;i++){ const c=pontosNodes[i]; const cpf=c.getAttribute('cpf'); if(cpf){ const pontos=parseInt(getXMLValue(c,'pontos'))||0; const historico=[]; const itens=c.getElementsByTagName('item'); for(let j=0;j<itens.length;j++){ historico.push({data:getXMLValue(itens[j],'data'),pontos:parseInt(getXMLValue(itens[j],'pontos')),motivo:getXMLValue(itens[j],'motivo'),totalAtual:0}); } novasPontuacoes[cpf]={pontos:pontos,historico:historico}; } }
-        pontuacoes = novasPontuacoes;
-        const solicitacoesNodes=xml.getElementsByTagName('solicitacao');
-        const novasSolicitacoes = [];
-        for(let i=0;i<solicitacoesNodes.length;i++){ const s=solicitacoesNodes[i]; novasSolicitacoes.push({id:parseInt(getXMLValue(s,'id')),parcelaId:parseInt(getXMLValue(s,'parcela_id')),cpf:getXMLValue(s,'cpf'),status:getXMLValue(s,'status'),dataSolicitacao:getXMLValue(s,'data')}); }
-        solicitacoesPagamento = novasSolicitacoes;
-        localStorage.setItem('duplicatas',JSON.stringify(duplicatas));
-        localStorage.setItem('configCredor',JSON.stringify(configCredor));
-        localStorage.setItem('pontuacoes',JSON.stringify(pontuacoes));
-        localStorage.setItem('solicitacoesPagamento',JSON.stringify(solicitacoesPagamento));
-        carregarTabelaClientes(); atualizarEstatisticas(); carregarConfigAdmin(); carregarSelectClientes(); carregarSolicitacoesAdmin();
-        alert(`Importado! ${novas.length} parcelas.`);
-    }catch(e){ alert('Erro: '+e.message); }}; reader.readAsText(file);}; input.click();
+        }; 
+        reader.readAsText(file);
+    }; 
+    input.click();
 }
-function exportarDados(){ exportarXML(); }
-function importarDados(){ importarXML(); }
+
+function exportarDados(){ 
+    exportarXML(); 
+}
+
+function importarDados(){ 
+    importarXML(); 
+}
+
 function atualizarEstatisticas(){
-    const t=document.getElementById('totalDuplicatas'), p=document.getElementById('totalPagas'), pe=document.getElementById('totalPendentes'), a=document.getElementById('totalAguardando'), v=document.getElementById('valorTotal');
-    if(t){ t.textContent=duplicatas.length; p.textContent=duplicatas.filter(d=>d.status==='pago').length; pe.textContent=duplicatas.filter(d=>d.status==='pendente').length; 
+    const t=document.getElementById('totalDuplicatas'), 
+          p=document.getElementById('totalPagas'), 
+          pe=document.getElementById('totalPendentes'), 
+          a=document.getElementById('totalAguardando'), 
+          v=document.getElementById('valorTotal');
+    if(t){ 
+        t.textContent=duplicatas.length; 
+        p.textContent=duplicatas.filter(d=>d.status==='pago').length; 
+        pe.textContent=duplicatas.filter(d=>d.status==='pendente').length; 
         if(a) a.textContent=duplicatas.filter(d=>d.status==='aguardando_confirmacao').length;
-        v.textContent=`R$ ${duplicatas.reduce((a,d)=>a+parseFloat(d.valor),0).toFixed(2)}`; }
+        v.textContent=`R$ ${duplicatas.reduce((a,d)=>a+parseFloat(d.valor),0).toFixed(2)}`; 
+    }
 }
+
 function limparTodosDados(){
-    if(confirm('ATENÇÃO! Apagar TODOS os dados?')){ localStorage.clear(); duplicatas=[]; pontuacoes={}; solicitacoesPagamento=[]; notificacoes=[]; configCredor={nome:"FRANKELLEY STEFANO ALVES AZEVEDO",fantasia:"FRANK MOTOS",cnpj:"33.917.740/0001-46",ie:"0000001109367",ccm:"11.222-3",contato:"(69) 98494-0207",endereco:"Av Dr Miguel Vieira Ferreira, 5454",bairro:"Cidade Alta",cidade:"ROLIM DE MOURA",uf:"RO",cep:"76940-000"}; carregarTabelaClientes(); atualizarEstatisticas(); carregarConfigAdmin(); alert('Dados removidos!'); }
+    if(confirm('ATENÇÃO! Apagar TODOS os dados?')){ 
+        localStorage.clear(); 
+        duplicatas=[]; 
+        pontuacoes={}; 
+        solicitacoesPagamento=[]; 
+        notificacoes=[]; 
+        configCredor={
+            nome:"FRANKELLEY STEFANO ALVES AZEVEDO",
+            fantasia:"FRANK MOTOS",
+            cnpj:"33.917.740/0001-46",
+            ie:"0000001109367",
+            ccm:"11.222-3",
+            contato:"(69) 98494-0207",
+            endereco:"Av Dr Miguel Vieira Ferreira, 5454",
+            bairro:"Cidade Alta",
+            cidade:"ROLIM DE MOURA",
+            uf:"RO",
+            cep:"76940-000"
+        }; 
+        carregarTabelaClientes(); 
+        atualizarEstatisticas(); 
+        carregarConfigAdmin(); 
+        alert('Dados removidos!'); 
+    }
 }
+
 function carregarConfigAdmin(){
-    const n=document.getElementById('configNomeCredor'); if(n){
-        document.getElementById('configNomeCredor').value=configCredor.nome; document.getElementById('configFantasia').value=configCredor.fantasia||'';
-        document.getElementById('configCnpj').value=configCredor.cnpj; document.getElementById('configIE').value=configCredor.ie;
-        document.getElementById('configCCM').value=configCredor.ccm||'11.222-3'; document.getElementById('configContato').value=configCredor.contato;
-        document.getElementById('configEndereco').value=configCredor.endereco; document.getElementById('configBairro').value=configCredor.bairro;
-        document.getElementById('configCidade').value=configCredor.cidade; document.getElementById('configUF').value=configCredor.uf;
+    const n=document.getElementById('configNomeCredor'); 
+    if(n){
+        document.getElementById('configNomeCredor').value=configCredor.nome; 
+        document.getElementById('configFantasia').value=configCredor.fantasia||'';
+        document.getElementById('configCnpj').value=configCredor.cnpj; 
+        document.getElementById('configIE').value=configCredor.ie;
+        document.getElementById('configCCM').value=configCredor.ccm||'11.222-3'; 
+        document.getElementById('configContato').value=configCredor.contato;
+        document.getElementById('configEndereco').value=configCredor.endereco; 
+        document.getElementById('configBairro').value=configCredor.bairro;
+        document.getElementById('configCidade').value=configCredor.cidade; 
+        document.getElementById('configUF').value=configCredor.uf;
         document.getElementById('configCep').value=configCredor.cep;
     }
 }
-document.getElementById('formConfigCredor')?.addEventListener('submit',function(e){ e.preventDefault();
-    configCredor={nome:document.getElementById('configNomeCredor').value, fantasia:document.getElementById('configFantasia').value, cnpj:document.getElementById('configCnpj').value, ie:document.getElementById('configIE').value, ccm:document.getElementById('configCCM').value, contato:document.getElementById('configContato').value, endereco:document.getElementById('configEndereco').value, bairro:document.getElementById('configBairro').value, cidade:document.getElementById('configCidade').value, uf:document.getElementById('configUF').value, cep:document.getElementById('configCep').value};
-    localStorage.setItem('configCredor',JSON.stringify(configCredor)); alert('Configurações salvas!');
+
+document.getElementById('formConfigCredor')?.addEventListener('submit',function(e){ 
+    e.preventDefault();
+    configCredor={
+        nome:document.getElementById('configNomeCredor').value, 
+        fantasia:document.getElementById('configFantasia').value, 
+        cnpj:document.getElementById('configCnpj').value, 
+        ie:document.getElementById('configIE').value, 
+        ccm:document.getElementById('configCCM').value, 
+        contato:document.getElementById('configContato').value, 
+        endereco:document.getElementById('configEndereco').value, 
+        bairro:document.getElementById('configBairro').value, 
+        cidade:document.getElementById('configCidade').value, 
+        uf:document.getElementById('configUF').value, 
+        cep:document.getElementById('configCep').value
+    };
+    localStorage.setItem('configCredor',JSON.stringify(configCredor)); 
+    alert('Configurações salvas!');
 });
+
 function adicionarCreditosDesenvolvedor(){
-    let f=document.querySelector('footer'); if(!f){ f=document.createElement('footer'); f.className='footer mt-5'; document.body.appendChild(f); }
+    let f=document.querySelector('footer'); 
+    if(!f){ 
+        f=document.createElement('footer'); 
+        f.className='footer mt-5'; 
+        document.body.appendChild(f); 
+    }
     f.innerHTML='<div class="container text-center"><hr><p class="text-muted"><i class="bi bi-code-slash"></i> Este site foi desenvolvido por <strong>SIPRIANO WEB</strong> em parceria com <strong>FRANK MOTOS</strong></p></div>';
 }
-function topFunction(){ document.body.scrollTop=0; document.documentElement.scrollTop=0; }
+
+function topFunction(){ 
+    document.body.scrollTop=0; 
+    document.documentElement.scrollTop=0; 
+}
+
 document.addEventListener('DOMContentLoaded',function(){
-    carregarTabelaClientes(); atualizarEstatisticas(); carregarConfigAdmin(); carregarSelectClientes(); carregarSolicitacoesAdmin();
-    if(window.location.pathname.includes('clientes_checklist.html')) carregarChecklistClientes();
-    if(window.location.pathname.includes('frankscore.html')){ const nav=document.querySelector('nav'); if(nav) nav.style.display='none'; }
-    const data=document.getElementById('dataEmissao'); if(data){ const hoje=new Date().toISOString().slice(0,10); data.value=hoje; data.addEventListener('change',atualizarDataFormatada); atualizarDataFormatada(); }
-    const sel=document.getElementById('quantidadeParcelas'); if(sel){ sel.addEventListener('change',toggleParcelas); toggleParcelas(); }
-    const val=document.getElementById('valor'); if(val){ val.addEventListener('input',function(){ converterValorPorExtenso(); if(sel&&sel.value!=='1') gerarCamposParcelas(); }); }
-    const btn=document.getElementById('btnTopo'); if(btn){ window.onscroll=function(){ btn.style.display=document.body.scrollTop>20||document.documentElement.scrollTop>20?'block':'none'; }; }
+    carregarTabelaClientes(); 
+    atualizarEstatisticas(); 
+    carregarConfigAdmin(); 
+    carregarSelectClientes(); 
+    carregarSolicitacoesAdmin();
+    if(window.location.pathname.includes('clientes_checklist.html')) 
+        carregarChecklistClientes();
+    if(window.location.pathname.includes('frankscore.html')){ 
+        const nav=document.querySelector('nav'); 
+        if(nav) nav.style.display='none'; 
+    }
+    const data=document.getElementById('dataEmissao'); 
+    if(data){ 
+        const hoje=new Date().toISOString().slice(0,10); 
+        data.value=hoje; 
+        data.addEventListener('change',atualizarDataFormatada); 
+        atualizarDataFormatada(); 
+    }
+    const sel=document.getElementById('quantidadeParcelas'); 
+    if(sel){ 
+        sel.addEventListener('change',toggleParcelas); 
+        toggleParcelas(); 
+    }
+    const val=document.getElementById('valor'); 
+    if(val){ 
+        val.addEventListener('input',function(){ 
+            converterValorPorExtenso(); 
+            if(sel&&sel.value!=='1') gerarCamposParcelas(); 
+        }); 
+    }
+    const btn=document.getElementById('btnTopo'); 
+    if(btn){ 
+        window.onscroll=function(){ 
+            btn.style.display=document.body.scrollTop>20||document.documentElement.scrollTop>20?'block':'none'; 
+        }; 
+    }
     adicionarCreditosDesenvolvedor();
 });
